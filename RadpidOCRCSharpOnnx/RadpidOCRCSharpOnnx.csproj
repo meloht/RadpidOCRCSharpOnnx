@@ -12,8 +12,4 @@
     <PackageReference Include="OpenCvSharp4.Extensions" Version="4.13.0.20260308" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="InferenceEngine\OnnxRuntime\" />
-  </ItemGroup>
-
 </Project>
