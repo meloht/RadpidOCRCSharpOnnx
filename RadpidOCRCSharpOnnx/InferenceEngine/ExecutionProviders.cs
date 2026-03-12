@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-namespace RadpidOCRCSharpOnnx.InferenceEngine.OnnxRuntime
+namespace RadpidOCRCSharpOnnx.InferenceEngine
 {
     public enum ExecutionProviders
     {
@@ -21,17 +21,13 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine.OnnxRuntime
         /// DmlExecutionProvider
         /// </summary>
         [Description("DmlExecutionProvider")]
-        DIRECTML_EP,
-        /// <summary>
-        /// CANNExecutionProvider
-        /// </summary>
-        [Description("CANNExecutionProvider")]
-        CANN_EP,
+        DirectML_EP,
+      
         /// <summary>
         /// CoreMLExecutionProvider
         /// </summary>
         [Description("CoreMLExecutionProvider")]
-        COREML_EP
+        CoreML_EP
     }
 
     public static class EnumExtensions
