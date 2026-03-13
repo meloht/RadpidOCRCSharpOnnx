@@ -6,10 +6,9 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
 {
     public class ONNXRuntimeError : Exception
     {
-        public ONNXRuntimeError(string message) : base(message)
-        {
-
-        }
-
+        public ONNXRuntimeError() : base() { }
+        public ONNXRuntimeError(string message) : base(message) { }
+        public ONNXRuntimeError(string message, Exception innerException)
+            : base(message, innerException) { }
     }
 }

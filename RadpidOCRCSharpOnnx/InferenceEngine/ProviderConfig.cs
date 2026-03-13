@@ -17,7 +17,7 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
             var providers = OrtEnv.Instance().GetAvailableProviders();
             if (providers == null || providers.Length == 0)
             {
-                _hadProviders = ["CPUExecutionProvider"];
+                _hadProviders = [EpNames.CPUExecutionProvider];
             }
             else
             {
@@ -98,7 +98,7 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
             {
                 return false;
             }
-            string providerName = ExecutionProviders.CUDA_EP.GetDescription();
+            string providerName = EpNames.CUDAExecutionProvider;
             if (_hadProviders != null && _hadProviders.Contains(providerName))
             {
                 return true;
@@ -136,7 +136,7 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
                 return false;
             }
 
-            var dmlEp = ExecutionProviders.DirectML_EP.GetDescription();
+            var dmlEp = EpNames.DmlExecutionProvider;
             if (_hadProviders.Contains(dmlEp))
             {
                 return true;
@@ -177,7 +177,7 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
                 return false;
             }
 
-            var coremlEp = ExecutionProviders.CoreML_EP.GetDescription();
+            var coremlEp = EpNames.CoreMLExecutionProvider;
             if (_hadProviders.Contains(coremlEp))
             {
                 return true;

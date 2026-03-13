@@ -70,4 +70,10 @@ namespace RadpidOCRCSharpOnnx.Utils
         CLS,
         REC
     }
+
+    public enum LimitType
+    {
+        Min,
+        Max
+    }
 }

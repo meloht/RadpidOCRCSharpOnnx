@@ -1,8 +1,10 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using RadpidOCRCSharpOnnx.Config;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
+
 
 namespace RadpidOCRCSharpOnnx.InferenceEngine
 {
@@ -43,6 +45,48 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
             return options;
         }
 
+        public OrtValue RunInference(DataTensorDimensions dataTensor)
+        {
+            try
+            {
+                using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(dataTensor.Data, dataTensor.Dimensions);
+                using var runOptions = new RunOptions();
+                using var results = _inferenceSession.Run(runOptions, _inferenceSession.InputNames, [inputOrtValue], _inferenceSession.OutputNames);
+                var output0 = results[0];
+                return output0;
+            }
+            catch (Exception ex)
+            {
+                throw new ONNXRuntimeError(ex.Message, ex);
+            }
+            finally
+            {
+                ArrayPool<float>.Shared.Return(dataTensor.Data);
+            }
+
+        }
+
+        public string[] GetInputNames()
+        {
+            var inputNames = _inferenceSession.InputNames;
+            return inputNames.ToArray();
+        }
+
+        public string[] GetOutputNames()
+        {
+            var outputNames = _inferenceSession.OutputNames;
+            return outputNames.ToArray();
+        }
+
+        public List<string> GetCharacterList(string key = "character")
+        {
+            
+            var map = _inferenceSession.ModelMetadata.CustomMetadataMap;
+            if (map.ContainsKey(key))
+                return map[key].Split('\n').ToList();
+
+            return new List<string>();
+        }
 
 
         public void Dispose()
