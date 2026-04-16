@@ -11,7 +11,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
     public class DetPreprocess
     {
 
-
         public DataTensorDimensions Preprocess(Mat image)
         {
             int maxWh = Math.Max(image.Width, image.Height);

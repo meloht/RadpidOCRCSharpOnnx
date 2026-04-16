@@ -90,4 +90,10 @@ namespace RapidOCRSharpOnnx.Utils
         NUM,
         EN_NUM
     }
+
+    public enum ScoreMode
+    {
+        FAST,
+        SLOW
+    }
 }

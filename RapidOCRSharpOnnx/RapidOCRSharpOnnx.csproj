@@ -10,8 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Clipper2" Version="2.0.0" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.24.3" />
-    <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260317" />
-    <PackageReference Include="OpenCvSharp4.Extensions" Version="4.13.0.20260317" />
+    <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260330" />
   </ItemGroup>
 
 </Project>
