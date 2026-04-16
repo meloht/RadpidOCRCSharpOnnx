@@ -10,7 +10,7 @@ namespace RadpidOCRCSharpOnnx.Config
         public static string LangType = "en";
         public static string ModelType = "mobile";
         public static string OcrVersion = "PP-OCRv5";
-        public static string ModelPath = "E:\\Hp\\ai-image\\ADFtools\\en_PP-OCRv5_mobile_rec_infer_onnx\\ch_PP-OCRv5_mobile_det.onnx";
+        public static string ModelPath = @"D:\code\RapidOCR-3.7.0\python\rapidocr\models\ch_PP-OCRv5_server_det.onnx";
         public static string ModelDir = "";
         public static int LimitSideLen = 736;
         public static LimitType LimitType = LimitType.Min;

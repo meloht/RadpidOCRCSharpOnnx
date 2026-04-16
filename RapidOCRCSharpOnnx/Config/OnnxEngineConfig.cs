@@ -10,7 +10,7 @@ namespace RadpidOCRCSharpOnnx.Config
         public static int IntraOpNumThreads  = -1;
         public static int InterOpNumThreads  = -1;
         public static bool EnableCpuMemArena  = false;
-        public static ExecutionProviders ExecutionProvider= ExecutionProviders.DirectML_EP;
+        public static ExecutionProviders ExecutionProvider= ExecutionProviders.CPU_EP;
 
         public static class CpuEpCfg
         {

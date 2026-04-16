@@ -1,0 +1,330 @@
+﻿using OpenCvSharp;
+using RadpidOCRCSharpOnnx.Config;
+using RadpidOCRCSharpOnnx.InferenceEngine;
+using RadpidOCRCSharpOnnx.Utils;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace RapidOCRCSharpOnnx.Inference.PPOCR_Det
+{
+    public class DetPreprocess
+    {
+
+
+        public DataTensorDimensions Preprocess(Mat image)
+        {
+            int maxWh = Math.Max(image.Width, image.Height);
+            int limitSideLen = DetConfig.LimitSideLen;
+            if (DetConfig.LimitType == LimitType.Min)
+            {
+                limitSideLen = DetConfig.LimitSideLen;
+            }
+            else if (maxWh < 960)
+            {
+                limitSideLen = 960;
+            }
+            else if (maxWh < 1500)
+            {
+                limitSideLen = 1500;
+            }
+            else
+            {
+                limitSideLen = 2000;
+            }
+
+            using Mat resizedImg = new Mat();
+            Resize(image, resizedImg, limitSideLen);
+
+            int hh = resizedImg.Height;
+            int ww = resizedImg.Width;
+
+            float[] inputData = NormalizeAndPermute(resizedImg);
+
+
+            return new DataTensorDimensions(inputData, new long[] { 1, 3, resizedImg.Height, resizedImg.Width });
+        }
+
+
+        /// <summary>
+        ///  归一化并转换为 Tensor (HWC -> CHW)
+        /// </summary>
+        private float[] NormalizeAndPermute(Mat img)
+        {
+            int len = img.Width * img.Height * 3;
+            //float[] data = ArrayPool<float>.Shared.Rent(len);
+            float[] data = new float[len];
+            int height = img.Height;
+            int width = img.Width;
+            int channels = img.Channels();
+            float scale = 1.0f / 255.0f;
+            int index = 0;
+            for (int c = 0; c < channels; c++)          // 通道（R=0, G=1, B=2）
+            {
+                for (int h = 0; h < height; h++)  // 高度
+                {
+                    for (int w = 0; w < width; w++)  // 宽度
+                    {
+                        var vec = img.At<Vec3b>(h, w);
+                        data[index++] = ((float)vec[c] * scale - DetConfig.Mean[c]) / DetConfig.Std[c];
+                    }
+                }
+            }
+            return data;
+
+        }
+
+        private void Resize(Mat img, Mat resized, int limitSideLen)
+        {
+            // 空值防护：输入图像为空/无效时抛出异常
+            if (img == null || img.Empty())
+                throw new ArgumentNullException(nameof(img), "The input image cannot be empty or invalid");
+
+            // 1. 获取图像高和宽
+            int h = img.Height;
+            int w = img.Width;
+            double ratio = 1.0;
+
+            // 2. 根据LimitType计算缩放比例
+            if (DetConfig.LimitType == LimitType.Max)
+            {
+                int maxSide = Math.Max(h, w);
+                if (maxSide > limitSideLen)
+                {
+                    ratio = (double)limitSideLen / maxSide;
+                }
+                // 否则ratio保持1.0
+            }
+            else // LimitType.Min
+            {
+                int minSide = Math.Min(h, w);
+                if (minSide < limitSideLen)
+                {
+                    ratio = (double)limitSideLen / minSide;
+                }
+                // 否则ratio保持1.0
+            }
+
+            // 3. 计算缩放后的高宽，并调整为32的整数倍（四舍五入后乘32）
+            int resizeH = (int)(h * ratio);
+            int resizeW = (int)(w * ratio);
+
+            // 调整为32的整数倍：round(resize_h/32)*32
+            resizeH = (int)Math.Round(resizeH / 32.0) * 32;
+            resizeW = (int)Math.Round(resizeW / 32.0) * 32;
+
+            // 边界检查：宽高<=0返回null
+            if (resizeW <= 0 || resizeH <= 0)
+                throw new Exception("Image scaling failed: resizeW <= 0 or resizeH <= 0");
+            // 4. 执行缩放并处理异常
+            try
+            {
+                // 调用OpenCV缩放）
+                Cv2.Resize(img, resized, new Size(resizeW, resizeH));
+            }
+            catch (Exception ex)
+            {
+                // 包装异常并保留原始异常（对应Python的raise ResizeImgError from exc）
+                throw new Exception("Image scaling failed", ex);
+            }
+
+        }
+
+        /// <summary>
+        /// 将图像尺寸限制在指定的最小和最大边长范围内，并确保宽高为32的倍数
+        /// </summary>
+        /// <param name="img">输入图像（不会被修改）</param>
+        /// <param name="minSideLen">最小边长</param>
+        /// <param name="maxSideLen">最大边长</param>
+        /// <returns>调整后的图像及缩放比例（原始高/新高，原始宽/新宽）</returns>
+        public (Mat ResizedImg, float RatioH, float RatioW) ResizeImageWithinBounds(
+            Mat img, float minSideLen, float maxSideLen)
+        {
+            int h = img.Height;
+            int w = img.Width;
+            float ratioH = 1.0f, ratioW = 1.0f;
+
+            // 如果最大边超过上限，先缩小
+            if (Math.Max(h, w) > maxSideLen)
+            {
+                var result = ReduceMaxSide(img, maxSideLen);
+                img = result.ResizedImg;
+                ratioH = result.RatioH;
+                ratioW = result.RatioW;
+                h = img.Height;
+                w = img.Width;
+            }
+
+            // 如果最小边低于下限，再放大
+            if (Math.Min(h, w) < minSideLen)
+            {
+                var result = IncreaseMinSide(img, minSideLen);
+                img = result.ResizedImg;
+                ratioH = result.RatioH;
+                ratioW = result.RatioW;
+            }
+
+            return (img, ratioH, ratioW);
+        }
+
+        /// <summary>
+        /// 缩小图像使最大边不超过指定值，同时确保宽高为32的倍数
+        /// </summary>
+        /// <param name="img">输入图像</param>
+        /// <param name="maxSideLen">最大边长限制</param>
+        /// <returns>调整后的图像及缩放比例（原始高/新高，原始宽/新宽）</returns>
+        private (Mat ResizedImg, float RatioH, float RatioW) ReduceMaxSide(
+            Mat img, float maxSideLen = 2000)
+        {
+            int h = img.Height;
+            int w = img.Width;
+
+            float ratio = 1.0f;
+            if (Math.Max(h, w) > maxSideLen)
+            {
+                if (h > w)
+                    ratio = maxSideLen / h;
+                else
+                    ratio = maxSideLen / w;
+            }
+
+            int resizeH = (int)(h * ratio);
+            int resizeW = (int)(w * ratio);
+
+            // 调整为32的倍数
+            resizeH = (int)(Math.Round(resizeH / 32.0, MidpointRounding.AwayFromZero) * 32);
+            resizeW = (int)(Math.Round(resizeW / 32.0, MidpointRounding.AwayFromZero) * 32);
+
+            if (resizeH <= 0 || resizeW <= 0)
+                throw new Exception("The adjusted width or height is less than or equal to 0");
+
+            Mat resized = new Mat();
+            try
+            {
+                Cv2.Resize(img, resized, new Size(resizeW, resizeH));
+            }
+            catch (Exception ex)
+            {
+                resized?.Dispose();
+                throw new Exception("Image scaling failed", ex);
+            }
+
+            float ratioH = h / (float)resizeH;
+            float ratioW = w / (float)resizeW;
+
+            return (resized, ratioH, ratioW);
+        }
+
+        /// <summary>
+        /// 放大图像使最小边不低于指定值，同时确保宽高为32的倍数
+        /// </summary>
+        /// <param name="img">输入图像</param>
+        /// <param name="minSideLen">最小边长限制</param>
+        /// <returns>调整后的图像及缩放比例（原始高/新高，原始宽/新宽）</returns>
+        private (Mat ResizedImg, float RatioH, float RatioW) IncreaseMinSide(
+            Mat img, float minSideLen = 30)
+        {
+            int h = img.Height;
+            int w = img.Width;
+
+            float ratio = 1.0f;
+            if (Math.Min(h, w) < minSideLen)
+            {
+                if (h < w)
+                    ratio = minSideLen / h;
+                else
+                    ratio = minSideLen / w;
+            }
+
+            int resizeH = (int)(h * ratio);
+            int resizeW = (int)(w * ratio);
+
+            // 调整为32的倍数
+            resizeH = (int)(Math.Round(resizeH / 32.0, MidpointRounding.AwayFromZero) * 32);
+            resizeW = (int)(Math.Round(resizeW / 32.0, MidpointRounding.AwayFromZero) * 32);
+
+            if (resizeH <= 0 || resizeW <= 0)
+                throw new Exception("The adjusted width or height is less than or equal to 0");
+
+            Mat resized = new Mat();
+            try
+            {
+                Cv2.Resize(img, resized, new Size(resizeW, resizeH));
+            }
+            catch (Exception ex)
+            {
+                resized?.Dispose();
+                throw new Exception("Image scaling failed", ex);
+            }
+
+            float ratioH = h / (float)resizeH;
+            float ratioW = w / (float)resizeW;
+
+            return (resized, ratioH, ratioW);
+        }
+
+
+        public (Mat ProcessedImg, int paddingTop, int paddingLeft) ApplyVerticalPadding(Mat img, float widthHeightRatio, float minHeight)
+        {
+
+            int h = img.Height;
+            int w = img.Width;
+            int paddingTop = 0;
+            int paddingLeft = 0;
+            bool useLimitRatio;
+            if (widthHeightRatio == -1)
+                useLimitRatio = false;
+            else
+                useLimitRatio = w / (float)h > widthHeightRatio;
+
+            if (h <= minHeight || useLimitRatio)
+            {
+                paddingTop = GetPaddingH(h, w, widthHeightRatio, minHeight);
+                Mat blockImg = AddRoundLetterbox(img, paddingTop, paddingTop, 0, 0);
+                paddingLeft = 0;
+                return (blockImg, paddingTop, paddingLeft);
+            }
+            else
+            {
+                // 返回原图像引用，表示未修改
+                return (img, 0, 0);
+            }
+        }
+
+        /// <summary>
+        /// 计算垂直方向需要的填充高度
+        /// </summary>
+        /// <param name="h">原始高度</param>
+        /// <param name="w">原始宽度</param>
+        /// <param name="widthHeightRatio">宽高比</param>
+        /// <param name="minHeight">最小高度</param>
+        /// <returns>需要填充的高度（每侧填充量）</returns>
+        private int GetPaddingH(int h, int w, float widthHeightRatio, float minHeight)
+        {
+            int newH = (int)(Math.Max(w / widthHeightRatio, minHeight) * 2);
+            int paddingH = (int)(Math.Abs(newH - h) / 2.0);
+            return paddingH;
+        }
+
+        /// <summary>
+        /// 添加圆角边框（实际是添加恒定值边框）
+        /// </summary>
+        private Mat AddRoundLetterbox(Mat img, int top, int bottom, int left, int right)
+        {
+            // 使用常量值0（黑色）进行边框填充
+            Mat paddedImg = new Mat();
+            Cv2.CopyMakeBorder(
+                img,
+                paddedImg,
+                top,
+                bottom,
+                left,
+                right,
+                BorderTypes.Constant,
+                new Scalar(0, 0, 0) // 黑色填充，根据图像通道数自动适应
+            );
+            return paddedImg;
+        }
+
+    }
+}

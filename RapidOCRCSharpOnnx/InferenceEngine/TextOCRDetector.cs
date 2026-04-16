@@ -11,7 +11,7 @@ using System.Text;
 
 namespace RadpidOCRCSharpOnnx.InferenceEngine
 {
-    public class TextOCRDetector:IDisposable
+    public class TextOCRDetector : IDisposable
     {
         private OrtInferSession _session;
         private const int _minSize = 3;
@@ -27,7 +27,7 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
         public TextDetOutput Run(Mat image)
         {
             _timer.Restart();
-           
+
             var data = Preprocess(image);
 
             using var outData = _session.RunInference(data);
@@ -35,7 +35,7 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
 
             var boxs = SortedBoxes(res.boxes);
             _timer.Stop();
-            
+
             return new TextDetOutput(boxs, res.scores, (int)_timer.ElapsedMilliseconds);
         }
 
@@ -63,6 +63,9 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
             using Mat resizedImg = new Mat();
             Resize(image, resizedImg, limitSideLen);
 
+            int hh = resizedImg.Height;
+            int ww = resizedImg.Width;
+           
             float[] inputData = NormalizeAndPermute(resizedImg);
             return new DataTensorDimensions(inputData, new long[] { 1, 3, resizedImg.Height, resizedImg.Width });
         }
@@ -129,10 +132,11 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
         {
             int len = img.Width * img.Height * 3;
             //float[] data = ArrayPool<float>.Shared.Rent(len);
-            float[] data=new float[len];
+            float[] data = new float[len];
             int height = img.Height;
             int width = img.Width;
             int channels = img.Channels();
+            float scale = 1.0f / 255.0f;
             int index = 0;
             for (int c = 0; c < channels; c++)          // 通道（R=0, G=1, B=2）
             {
@@ -141,7 +145,7 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
                     for (int w = 0; w < width; w++)  // 宽度
                     {
                         var vec = img.At<Vec3b>(h, w);
-                        data[index++] = (vec[c] / 255.0f);
+                        data[index++] = ((float)vec[c]* scale - DetConfig.Mean[c]) / DetConfig.Std[c];
                     }
                 }
             }
@@ -159,8 +163,8 @@ namespace RadpidOCRCSharpOnnx.InferenceEngine
         {
             var shape = output.GetTensorTypeAndShape().Shape;
             //获取OrtValue维度[1, 1, H, W]
-            var dataArray = output.GetTensorDataAsSpan<float>();
-           
+            var dataArray = output.GetTensorDataAsSpan<float>().ToArray();
+          
             int h = (int)shape[2];
             int w = (int)shape[3];
 
