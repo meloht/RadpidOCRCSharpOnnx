@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.ML.OnnxRuntime;
+using OpenCvSharp;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,5 +8,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
     public interface IDetPostprocess
     {
+        DetectResult PostProcess(Mat image, OrtValue output);
     }
 }

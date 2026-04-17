@@ -1,5 +1,6 @@
 ﻿using OpenCvSharp;
 using RapidOCRSharpOnnx.Config;
+using RapidOCRSharpOnnx.Configurations;
 using RapidOCRSharpOnnx.InferenceEngine;
 using RapidOCRSharpOnnx.Utils;
 using System;
@@ -8,10 +9,30 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
-    public class DetPreprocess
+    public class DetPreprocess : IDetPreprocess
     {
-
+        private OcrConfig _ocrConfig;
+        public DetPreprocess(OcrConfig ocrConfig)
+        {
+            _ocrConfig = ocrConfig;
+        }
         public DataTensorDimensions Preprocess(Mat image)
+        {
+            using Mat resizedImg = new Mat();
+
+            (float RatioH, float RatioW) = ResizeImageWithinBounds(image, resizedImg, _ocrConfig.MinSideLen, _ocrConfig.MaxSideLen);
+
+            (int paddingTop, int paddingLeft) = ApplyVerticalPadding(resizedImg, _ocrConfig.WidthHeightRatio, _ocrConfig.MinHeight);
+
+            var data = PreprocessImage(resizedImg);
+            data.RatioW = RatioW;
+            data.RatioH = RatioH;
+            data.PaddingLeft = paddingLeft;
+            data.PaddingTop = paddingTop;
+
+            return data;
+        }
+        private DataTensorDimensions PreprocessImage(Mat image)
         {
             int maxWh = Math.Max(image.Width, image.Height);
             int limitSideLen = DetConfig.LimitSideLen;
@@ -45,6 +66,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         }
 
 
+
         /// <summary>
         ///  归一化并转换为 Tensor (HWC -> CHW)
         /// </summary>
@@ -65,7 +87,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                     for (int w = 0; w < width; w++)  // 宽度
                     {
                         var vec = img.At<Vec3b>(h, w);
-                        data[index++] = ((float)vec[c] * scale - DetConfig.Mean[c]) / DetConfig.Std[c];
+                        data[index++] = ((float)vec[c] * scale - _ocrConfig.DetectorConfig.Mean[c]) / _ocrConfig.DetectorConfig.Std[c];
                     }
                 }
             }
@@ -85,7 +107,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             double ratio = 1.0;
 
             // 2. 根据LimitType计算缩放比例
-            if (DetConfig.LimitType == LimitType.Max)
+            if (_ocrConfig.DetectorConfig.LimitType == LimitType.Max)
             {
                 int maxSide = Math.Max(h, w);
                 if (maxSide > limitSideLen)
@@ -136,8 +158,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         /// <param name="minSideLen">最小边长</param>
         /// <param name="maxSideLen">最大边长</param>
         /// <returns>调整后的图像及缩放比例（原始高/新高，原始宽/新宽）</returns>
-        public (Mat ResizedImg, float RatioH, float RatioW) ResizeImageWithinBounds(
-            Mat img, float minSideLen, float maxSideLen)
+        public (float RatioH, float RatioW) ResizeImageWithinBounds(
+            Mat img, Mat resizedImg, float minSideLen, float maxSideLen)
         {
             int h = img.Height;
             int w = img.Width;
@@ -146,24 +168,23 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             // 如果最大边超过上限，先缩小
             if (Math.Max(h, w) > maxSideLen)
             {
-                var result = ReduceMaxSide(img, maxSideLen);
-                img = result.ResizedImg;
+                var result = ReduceMaxSide(img, resizedImg, maxSideLen);
                 ratioH = result.RatioH;
                 ratioW = result.RatioW;
-                h = img.Height;
-                w = img.Width;
+                h = resizedImg.Height;
+                w = resizedImg.Width;
             }
 
             // 如果最小边低于下限，再放大
             if (Math.Min(h, w) < minSideLen)
             {
-                var result = IncreaseMinSide(img, minSideLen);
-                img = result.ResizedImg;
+                var result = IncreaseMinSide(img, resizedImg, minSideLen);
+
                 ratioH = result.RatioH;
                 ratioW = result.RatioW;
             }
 
-            return (img, ratioH, ratioW);
+            return (ratioH, ratioW);
         }
 
         /// <summary>
@@ -172,8 +193,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         /// <param name="img">输入图像</param>
         /// <param name="maxSideLen">最大边长限制</param>
         /// <returns>调整后的图像及缩放比例（原始高/新高，原始宽/新宽）</returns>
-        private (Mat ResizedImg, float RatioH, float RatioW) ReduceMaxSide(
-            Mat img, float maxSideLen = 2000)
+        private (float RatioH, float RatioW) ReduceMaxSide(
+            Mat img, Mat resizedImg, float maxSideLen = 2000)
         {
             int h = img.Height;
             int w = img.Width;
@@ -197,21 +218,19 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             if (resizeH <= 0 || resizeW <= 0)
                 throw new Exception("The adjusted width or height is less than or equal to 0");
 
-            Mat resized = new Mat();
             try
             {
-                Cv2.Resize(img, resized, new Size(resizeW, resizeH));
+                Cv2.Resize(img, resizedImg, new Size(resizeW, resizeH));
             }
             catch (Exception ex)
             {
-                resized?.Dispose();
                 throw new Exception("Image scaling failed", ex);
             }
 
             float ratioH = h / (float)resizeH;
             float ratioW = w / (float)resizeW;
 
-            return (resized, ratioH, ratioW);
+            return (ratioH, ratioW);
         }
 
         /// <summary>
@@ -220,8 +239,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         /// <param name="img">输入图像</param>
         /// <param name="minSideLen">最小边长限制</param>
         /// <returns>调整后的图像及缩放比例（原始高/新高，原始宽/新宽）</returns>
-        private (Mat ResizedImg, float RatioH, float RatioW) IncreaseMinSide(
-            Mat img, float minSideLen = 30)
+        private (float RatioH, float RatioW) IncreaseMinSide(
+            Mat img, Mat resizedImg, float minSideLen = 30)
         {
             int h = img.Height;
             int w = img.Width;
@@ -245,29 +264,26 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             if (resizeH <= 0 || resizeW <= 0)
                 throw new Exception("The adjusted width or height is less than or equal to 0");
 
-            Mat resized = new Mat();
             try
             {
-                Cv2.Resize(img, resized, new Size(resizeW, resizeH));
+                Cv2.Resize(img, resizedImg, new Size(resizeW, resizeH));
             }
             catch (Exception ex)
             {
-                resized?.Dispose();
                 throw new Exception("Image scaling failed", ex);
             }
 
             float ratioH = h / (float)resizeH;
             float ratioW = w / (float)resizeW;
 
-            return (resized, ratioH, ratioW);
+            return (ratioH, ratioW);
         }
 
 
-        public (Mat ProcessedImg, int paddingTop, int paddingLeft) ApplyVerticalPadding(Mat img, float widthHeightRatio, float minHeight)
+        public (int paddingTop, int paddingLeft) ApplyVerticalPadding(Mat processedImg, float widthHeightRatio, float minHeight)
         {
-
-            int h = img.Height;
-            int w = img.Width;
+            int h = processedImg.Height;
+            int w = processedImg.Width;
             int paddingTop = 0;
             int paddingLeft = 0;
             bool useLimitRatio;
@@ -279,14 +295,15 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             if (h <= minHeight || useLimitRatio)
             {
                 paddingTop = GetPaddingH(h, w, widthHeightRatio, minHeight);
-                Mat blockImg = AddRoundLetterbox(img, paddingTop, paddingTop, 0, 0);
+                AddRoundLetterbox(processedImg, processedImg, paddingTop, paddingTop, 0, 0);
+
                 paddingLeft = 0;
-                return (blockImg, paddingTop, paddingLeft);
+                return (paddingTop, paddingLeft);
             }
             else
             {
                 // 返回原图像引用，表示未修改
-                return (img, 0, 0);
+                return (0, 0);
             }
         }
 
@@ -308,13 +325,12 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         /// <summary>
         /// 添加圆角边框（实际是添加恒定值边框）
         /// </summary>
-        private Mat AddRoundLetterbox(Mat img, int top, int bottom, int left, int right)
+        private void AddRoundLetterbox(Mat img, Mat processedImg, int top, int bottom, int left, int right)
         {
             // 使用常量值0（黑色）进行边框填充
-            Mat paddedImg = new Mat();
             Cv2.CopyMakeBorder(
                 img,
-                paddedImg,
+                processedImg,
                 top,
                 bottom,
                 left,
@@ -322,7 +338,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 BorderTypes.Constant,
                 new Scalar(0, 0, 0) // 黑色填充，根据图像通道数自动适应
             );
-            return paddedImg;
+
         }
 
     }
