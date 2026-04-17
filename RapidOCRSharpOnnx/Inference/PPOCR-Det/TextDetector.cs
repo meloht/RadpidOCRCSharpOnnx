@@ -17,13 +17,13 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
         private IDetPreprocess _detPreprocess;
         private IDetPostprocess _detPostprocess;
-        private OcrConfig _ocrConfig;
 
-        public TextDetector(OcrConfig ocrConfig, InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
+
+        public TextDetector(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
         {
+            _runOptions = new RunOptions();
             _session = session;
             _options = options;
-            _ocrConfig = ocrConfig;
             _detPreprocess = preprocess;
             _detPostprocess = postprocess;
         }

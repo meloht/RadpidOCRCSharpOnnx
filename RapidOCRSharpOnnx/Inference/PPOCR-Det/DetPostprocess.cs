@@ -19,7 +19,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
             var boxes = SortedBoxes(res.boxes);
             var imgCropList = new List<Mat>();
-            Console.WriteLine(boxes.Count);
+         
             foreach (var item in boxes)
             {
                 var imgCrop = GetRotateCropImage(image, item);

@@ -53,16 +53,12 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 limitSideLen = 2000;
             }
 
-            using Mat resizedImg = new Mat();
-            Resize(image, resizedImg, limitSideLen);
 
-            int hh = resizedImg.Height;
-            int ww = resizedImg.Width;
+            Resize(image, image, limitSideLen);
 
-            float[] inputData = NormalizeAndPermute(resizedImg);
+            float[] inputData = NormalizeAndPermute(image);
 
-
-            return new DataTensorDimensions(inputData, new long[] { 1, 3, resizedImg.Height, resizedImg.Width });
+            return new DataTensorDimensions(inputData, new long[] { 1, 3, image.Height, image.Width });
         }
 
 
