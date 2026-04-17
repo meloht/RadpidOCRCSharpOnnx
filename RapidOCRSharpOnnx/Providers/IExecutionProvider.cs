@@ -10,6 +10,10 @@ namespace RapidOCRSharpOnnx.Providers
     {
         IOcrDetector CreateDetector();
 
+        IOcrClassifier CreateClassifier();
+
+        IOcrRecognizer CreateRecognizer();
+
         OcrConfig OcrConfig { get; }
 
     }

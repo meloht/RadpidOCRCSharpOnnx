@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Utils
 {
-    public enum DeviceType
+    public enum DeviceVendorType
     {
         CPU,
         CUDA,

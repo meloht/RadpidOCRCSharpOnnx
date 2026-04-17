@@ -1,6 +1,7 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 using RapidOCRSharpOnnx.Configurations;
+using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,11 +16,16 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 
         private IClsPreprocess _clsPreprocess;
         private IClsPostprocess _clsPostprocess;
-        private int[] _clsImageShape;
+
         private OcrConfig _ocrConfig;
 
+        private static readonly int[] ClsImageShapev4 = [3, 48, 192];
+        private static readonly int[] ClsImageShapev5 = [3, 80, 160];
 
-        public TextClassifier(InferenceSession session, SessionOptions options, IClsPostprocess postprocess, IClsPreprocess preprocess, int[] clsImageShape, OcrConfig ocrConfig)
+        private readonly int[] _clsImageShape;
+
+
+        public TextClassifier(InferenceSession session, SessionOptions options, IClsPostprocess postprocess, IClsPreprocess preprocess, OcrConfig ocrConfig)
         {
             _runOptions = new RunOptions();
             _session = session;
@@ -27,8 +33,17 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             _clsPreprocess = preprocess;
             _clsPostprocess = postprocess;
 
-            _clsImageShape = clsImageShape;
+
             _ocrConfig = ocrConfig;
+
+            if (_ocrConfig.ClassifierConfig.OCRVersion == OCRVersion.PPOCRV5)
+            {
+                _clsImageShape = ClsImageShapev5;
+            }
+            else
+            {
+                _clsImageShape = ClsImageShapev4;
+            }
         }
 
 
@@ -64,7 +79,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 idx = 0;
                 for (int j = i; j < endNo; j++)
                 {
-                    idx = _clsPreprocess.ResizeNormImg(imgList[indices[j]], idx, batchData);
+                    idx = _clsPreprocess.ResizeNormImg(imgList[indices[j]], idx, batchData, _clsImageShape);
                 }
 
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_w });
@@ -73,8 +88,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 using var outData = _session.Run(runOptions, _session.InputNames, [inputOrtValue], _session.OutputNames);
                 using var outputOrtValue = outData[0];
 
-                _clsPostprocess.ClsPostProcess(outputOrtValue,i,imgList,cls_res);
-               
+                _clsPostprocess.ClsPostProcess(outputOrtValue, i, imgList, cls_res);
+
             }
 
             return cls_res;

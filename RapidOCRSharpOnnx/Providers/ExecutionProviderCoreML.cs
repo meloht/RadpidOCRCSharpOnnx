@@ -1,7 +1,9 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using RapidOCRSharpOnnx.Configurations;
 using RapidOCRSharpOnnx.Inference;
+using RapidOCRSharpOnnx.Inference.PPOCR_Cls;
 using RapidOCRSharpOnnx.Inference.PPOCR_Det;
+using RapidOCRSharpOnnx.Inference.PPOCR_Rec;
 using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
@@ -9,36 +11,27 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Providers
 {
-    public class ExecutionProviderCoreML : ExecutionProvider, IExecutionProvider
+    public class ExecutionProviderCoreML : ExecutionProvider
     {
         private CoreMLFlags _coreMLFlags;
         public ExecutionProviderCoreML(OcrConfig ocrConfig, CoreMLFlags coreMLFlags = CoreMLFlags.COREML_FLAG_USE_NONE) : base(ocrConfig)
         {
             _coreMLFlags = coreMLFlags;
         }
-        public IOcrDetector CreateDetector()
-        {
-            throw new NotImplementedException();
-        }
 
-        protected override IOcrClassifier GetClassifier(InferenceSession session, SessionOptions options)
+        protected override SessionOptions BuildSessionOptions()
         {
-            throw new NotImplementedException();
+            SessionOptions sessionOptions = new SessionOptions();
+            sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
+            sessionOptions.EnableCpuMemArena = true;
+            sessionOptions.AppendExecutionProvider_CoreML(_coreMLFlags);
+            return sessionOptions;
         }
-
-        protected override IOcrDetector GetDetector(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
-        {
-            throw new NotImplementedException();
-        }
+      
 
         protected override DeviceType GetDeviceType()
         {
-            throw new NotImplementedException();
-        }
-
-        protected override IOcrRecognizer GetRecognizer(InferenceSession session, SessionOptions options)
-        {
-            throw new NotImplementedException();
+            return DeviceType.CPU;
         }
     }
 }

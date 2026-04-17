@@ -1,7 +1,5 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using RapidOCRSharpOnnx.Configurations;
-using RapidOCRSharpOnnx.Inference;
-using RapidOCRSharpOnnx.Inference.PPOCR_Det;
 using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
@@ -9,7 +7,7 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Providers
 {
-    public class ExecutionProviderCUDA : ExecutionProvider, IExecutionProvider
+    public class ExecutionProviderCUDA : ExecutionProvider
     {
         private int _deviceId;
         private Dictionary<string, string> _providerOptionsDict;
@@ -20,29 +18,36 @@ namespace RapidOCRSharpOnnx.Providers
             _providerOptionsDict = providerOptionsDict;
         }
 
-        public IOcrDetector CreateDetector()
+        protected override SessionOptions BuildSessionOptions()
         {
-            throw new NotImplementedException();
-        }
+            SessionOptions options;
+            if (this._providerOptionsDict != null && this._providerOptionsDict.Count > 0)
+            {
+                if (_providerOptionsDict.ContainsKey("device_id"))
+                {
+                    _providerOptionsDict["device_id"] = _deviceId.ToString();
+                }
+                else
+                {
+                    _providerOptionsDict.Add("device_id", _deviceId.ToString());
+                }
+                var cudaProviderOptions = new OrtCUDAProviderOptions();
+                cudaProviderOptions.UpdateOptions(_providerOptionsDict);
+                options = SessionOptions.MakeSessionOptionWithCudaProvider(cudaProviderOptions);
+            }
+            else
+            {
+                options = SessionOptions.MakeSessionOptionWithCudaProvider(_deviceId);
+            }
 
-        protected override IOcrClassifier GetClassifier(InferenceSession session, SessionOptions options)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override IOcrDetector GetDetector(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
-        {
-            throw new NotImplementedException();
+            options.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
+            options.EnableCpuMemArena = true;
+            return options;
         }
 
         protected override DeviceType GetDeviceType()
         {
-            throw new NotImplementedException();
-        }
-
-        protected override IOcrRecognizer GetRecognizer(InferenceSession session, SessionOptions options)
-        {
-            throw new NotImplementedException();
+            return DeviceType.GPU;
         }
     }
 }

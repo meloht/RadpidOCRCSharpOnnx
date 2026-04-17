@@ -9,7 +9,7 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Providers
 {
-    public class ExecutionProviderTensorRT : ExecutionProvider, IExecutionProvider
+    public class ExecutionProviderTensorRT : ExecutionProvider
     {
         private int _deviceId;
         private Dictionary<string, string> _providerOptionsDict;
@@ -20,29 +20,37 @@ namespace RapidOCRSharpOnnx.Providers
             _providerOptionsDict = providerOptionsDict;
         }
 
-        public IOcrDetector CreateDetector()
+        protected override SessionOptions BuildSessionOptions()
         {
-            throw new NotImplementedException();
-        }
+            SessionOptions options;
+            if (this._providerOptionsDict != null && this._providerOptionsDict.Count > 0)
+            {
+                if (_providerOptionsDict.ContainsKey("device_id"))
+                {
+                    _providerOptionsDict["device_id"] = _deviceId.ToString();
+                }
+                else
+                {
+                    _providerOptionsDict.Add("device_id", _deviceId.ToString());
+                }
+                var tensorrtProviderOptions = new OrtTensorRTProviderOptions();
+                tensorrtProviderOptions.UpdateOptions(_providerOptionsDict);
+                options = SessionOptions.MakeSessionOptionWithTensorrtProvider(tensorrtProviderOptions);
+            }
+            else
+            {
+                options = SessionOptions.MakeSessionOptionWithTensorrtProvider(_deviceId);
+            }
 
-        protected override IOcrClassifier GetClassifier(InferenceSession session, SessionOptions options)
-        {
-            throw new NotImplementedException();
-        }
+            options.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
+            options.EnableCpuMemArena = true;
 
-        protected override IOcrDetector GetDetector(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
-        {
-            throw new NotImplementedException();
+            return options;
         }
 
         protected override DeviceType GetDeviceType()
         {
-            throw new NotImplementedException();
-        }
-
-        protected override IOcrRecognizer GetRecognizer(InferenceSession session, SessionOptions options)
-        {
-            throw new NotImplementedException();
+            return DeviceType.GPU;
         }
     }
 }

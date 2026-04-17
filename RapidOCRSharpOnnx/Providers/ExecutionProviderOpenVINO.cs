@@ -1,15 +1,12 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using RapidOCRSharpOnnx.Configurations;
-using RapidOCRSharpOnnx.Inference;
-using RapidOCRSharpOnnx.Inference.PPOCR_Det;
-using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace RapidOCRSharpOnnx.Providers
 {
-    public class ExecutionProviderOpenVINO : ExecutionProvider, IExecutionProvider
+    public class ExecutionProviderOpenVINO : ExecutionProvider
     {
         private const string CPU = "CPU";
         private const string GPU = "GPU";
@@ -23,29 +20,27 @@ namespace RapidOCRSharpOnnx.Providers
             _intelDeviceType = intelDeviceType;
         }
 
-        public IOcrDetector CreateDetector()
+        protected override SessionOptions BuildSessionOptions()
         {
-            throw new NotImplementedException();
-        }
+            SessionOptions options = new SessionOptions();
+            options.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
+            options.EnableCpuMemArena = true;
+            options.AppendExecutionProvider_OpenVINO(GetIntelDeviceType());
 
-        protected override IOcrClassifier GetClassifier(InferenceSession session, SessionOptions options)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override IOcrDetector GetDetector(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
-        {
-            throw new NotImplementedException();
+            return options;
         }
 
         protected override DeviceType GetDeviceType()
         {
-            throw new NotImplementedException();
-        }
-
-        protected override IOcrRecognizer GetRecognizer(InferenceSession session, SessionOptions options)
-        {
-            throw new NotImplementedException();
+            if (_intelDeviceType == IntelDeviceType.CPU)
+            {
+                return DeviceType.CPU;
+            }
+            else if (_intelDeviceType == IntelDeviceType.NPU)
+            {
+                return DeviceType.NPU;
+            }
+            return DeviceType.GPU;
         }
 
         private string GetIntelDeviceType()
