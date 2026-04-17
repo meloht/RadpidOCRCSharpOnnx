@@ -8,6 +8,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 {
     public interface IClsPostprocess
     {
-        void ClsPostProcess(OrtValue ortValue, int ij, Mat[] imgList, InferenceResult[] cls_res);
+        void ClsPostProcess(OrtValue ortValue, int ij, Mat[] imgList, ClsResult[] cls_res);
     }
 }

@@ -36,21 +36,22 @@ namespace RapidOCRSharpOnnx.Providers
             var postprocess = new DetPostprocess(OcrConfig.DetectorConfig);
             var preprocess = new DetPreprocess(OcrConfig);
 
-            return new TextDetector(session, options, postprocess, preprocess);
+            return new TextDetectorOrtVal(session, options, postprocess, preprocess);
         }
 
         public IOcrClassifier CreateClassifier()
         {
             if (OcrConfig.ClassifierConfig == null || string.IsNullOrWhiteSpace(OcrConfig.ClassifierConfig.ModelPath))
             {
-                throw new ArgumentException("ClassifierConfig or ModelPath is null or empty.");
+                //throw new ArgumentException("ClassifierConfig or ModelPath is null or empty.");
+                return null;
             }
             var options = BuildSessionOptions();
             InferenceSession session = new InferenceSession(OcrConfig.ClassifierConfig.ModelPath, options);
             var postprocess = new ClsPostprocess(OcrConfig.ClassifierConfig);
             var preprocess = new ClsPreprocess();
 
-            return new TextClassifier(session, options, postprocess, preprocess, OcrConfig);
+            return new TextClassifierOrtVal(session, options, postprocess, preprocess, OcrConfig);
         }
 
         public IOcrRecognizer CreateRecognizer()
@@ -64,7 +65,7 @@ namespace RapidOCRSharpOnnx.Providers
             var postprocess = new RecPostprocess(OcrConfig);
             var preprocess = new RecPreprocess(OcrConfig.RecognizerConfig);
 
-            return new TextRecognizer(session, options, postprocess, preprocess, OcrConfig);
+            return new TextRecognizerOrtVal(session, options, postprocess, preprocess, OcrConfig);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
         {
             _classifierConfig = clsConfig;
         }
-        public void ClsPostProcess(OrtValue ortValue,int ij, Mat[] imgList, InferenceResult[] cls_res)
+        public void ClsPostProcess(OrtValue ortValue,int ij, Mat[] imgList, ClsResult[] cls_res)
         {
             var shapeInfo = ortValue.GetTensorTypeAndShape();
             int batchSize = (int)shapeInfo.Shape[0];

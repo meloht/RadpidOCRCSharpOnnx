@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 {
-    public class TextRecognizer : IOcrRecognizer
+    public class TextRecognizerOrtVal : IOcrRecognizer
     {
         protected readonly InferenceSession _session;
         protected readonly SessionOptions _options;
@@ -20,7 +20,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 
         private OcrConfig _ocrConfig;
 
-        public TextRecognizer(InferenceSession session, SessionOptions options, IRecPostprocess postprocess, IRecPreprocess preprocess, OcrConfig ocrConfig)
+        public TextRecognizerOrtVal(InferenceSession session, SessionOptions options, IRecPostprocess postprocess, IRecPreprocess preprocess, OcrConfig ocrConfig)
         {
             _runOptions = new RunOptions();
             _session = session;
@@ -45,7 +45,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
         }
 
 
-        public InferenceResult[] RecognizeText(Mat[] imgList)
+        public RecResult[] TextRecognize(Mat[] imgList)
         {
             int[] indices = new int[imgList.Length];
             float[] widthList = new float[imgList.Length];
@@ -58,10 +58,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             Array.Sort(indices, (a, b) => widthList[a].CompareTo(widthList[b]));
             int imgCount = imgList.Length;
 
-            InferenceResult[] rec_res = new InferenceResult[imgCount];
+            RecResult[] rec_res = new RecResult[imgCount];
             for (int i = 0; i < imgCount; i++)
             {
-                rec_res[i] = new InferenceResult("", 0.0f);
+                rec_res[i] = new RecResult("", 0.0f);
             }
             int img_c = _ocrConfig.RecognizerConfig.RecImgShape[0];
             int img_h = _ocrConfig.RecognizerConfig.RecImgShape[1];

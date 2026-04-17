@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 {
-    public class TextClassifier : IOcrClassifier
+    public class TextClassifierOrtVal : IOcrClassifier
     {
         protected readonly InferenceSession _session;
         protected readonly SessionOptions _options;
@@ -25,7 +25,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
         private readonly int[] _clsImageShape;
 
 
-        public TextClassifier(InferenceSession session, SessionOptions options, IClsPostprocess postprocess, IClsPreprocess preprocess, OcrConfig ocrConfig)
+        public TextClassifierOrtVal(InferenceSession session, SessionOptions options, IClsPostprocess postprocess, IClsPreprocess preprocess, OcrConfig ocrConfig)
         {
             _runOptions = new RunOptions();
             _session = session;
@@ -47,7 +47,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
         }
 
 
-        public InferenceResult[] TextClassify(Mat[] imgList)
+        public ClsResult[] TextClassify(Mat[] imgList)
         {
             int[] indices = new int[imgList.Length];
             float[] widthList = new float[imgList.Length];
@@ -59,10 +59,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 
             Array.Sort(indices, (a, b) => widthList[a].CompareTo(widthList[b]));
             int imgCount = imgList.Length;
-            InferenceResult[] cls_res = new InferenceResult[imgCount];
+            ClsResult[] cls_res = new ClsResult[imgCount];
             for (int i = 0; i < imgCount; i++)
             {
-                cls_res[i] = new InferenceResult("", 0.0f);
+                cls_res[i] = new ClsResult("", 0.0f);
             }
             int img_c = _clsImageShape[0];
             int img_h = _clsImageShape[1];

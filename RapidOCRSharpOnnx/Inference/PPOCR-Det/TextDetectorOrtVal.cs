@@ -9,7 +9,7 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
-    public class TextDetector : IOcrDetector
+    public class TextDetectorOrtVal : IOcrDetector
     {
         protected readonly InferenceSession _session;
         protected readonly SessionOptions _options;
@@ -19,7 +19,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         private IDetPostprocess _detPostprocess;
 
 
-        public TextDetector(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
+        public TextDetectorOrtVal(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
         {
             _runOptions = new RunOptions();
             _session = session;
@@ -27,7 +27,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             _detPreprocess = preprocess;
             _detPostprocess = postprocess;
         }
-        public DetectResult Run(Mat image)
+        public DetectResult TextDetect(Mat image)
         {
             var data = _detPreprocess.Preprocess(image);
             using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(data.Data, data.Dimensions);

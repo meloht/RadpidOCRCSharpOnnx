@@ -32,7 +32,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 imgCropList.Add(imgCrop);
             }
 
-            return new DetectResult(boxes, imgCropList);
+            return new DetectResult(boxes.ToArray(), imgCropList.ToArray());
         }
 
         private (List<Point2f[]> boxes, List<float> scores) DBPostProcess(OrtValue output, int oriHeight, int oriWidth)

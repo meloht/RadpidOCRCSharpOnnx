@@ -32,6 +32,47 @@ namespace RapidOCRSharpOnnx.Utils
             return text.Any(ch => IsChineseChar(ch));
         }
 
+        public static float Distance(Point2f p1, Point2f p2)
+        {
+            float dx = p1.X - p2.X;
+            float dy = p1.Y - p2.Y;
+            return (float)Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        public static void MapBoxesToOriginal(Point2f[][] boxes, float ratioH, float ratioW, int paddingTop, int paddingLeft, int ori_h, int ori_w)
+        {
+            for (int i = 0; i < boxes.Length; i++)
+            {
+                for (int j = 0; j < boxes[i].Length; j++)
+                {
+                    boxes[i][j].X = Math.Clamp((boxes[i][j].X - paddingLeft) * ratioW, 0, ori_w);
+                    boxes[i][j].Y = Math.Clamp((boxes[i][j].Y - paddingTop) * ratioH, 0, ori_h);
+                }
+            }
+        }
+
+        public static Mat[] MapImgToOriginal(Mat[] imgs, float ratioH, float ratioW)
+        {
+            Mat[] results = new Mat[imgs.Length];
+            for (int i = 0; i < imgs.Length; i++)
+            {
+                Mat img = imgs[i];
+                // 1. 获取当前图像的 高度、宽度
+                int imgH = img.Rows;    // 图像高度
+                int imgW = img.Cols;    // 图像宽度
+
+                // 2. 计算原始图像尺寸
+                int oriImgH = (int)Math.Round(imgH * ratioH);
+                int oriImgW = (int)Math.Round(imgW * ratioW);
+
+                // 3. 缩放回原始尺寸
+                Mat resizeImg = new Mat();
+                Cv2.Resize(img, resizeImg, new Size(oriImgW, oriImgH));
+
+                results[i] = resizeImg;
+            }
+            return results;
+        }
 
 
 
@@ -39,6 +80,5 @@ namespace RapidOCRSharpOnnx.Utils
 
 
 
-   
     }
 }

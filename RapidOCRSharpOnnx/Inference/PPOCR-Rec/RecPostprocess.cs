@@ -14,7 +14,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
         {
             _ocrConfig = ocrConfig;
         }
-        public InferenceResult[] RecPostProcess(OrtValue ortValue, float[] wh_ratio_list, float max_wh_ratio, string[] charList)
+        public RecResult[] RecPostProcess(OrtValue ortValue, float[] wh_ratio_list, float max_wh_ratio, string[] charList)
         {
             var shapeInfo = ortValue.GetTensorTypeAndShape();
             int batchSize = (int)shapeInfo.Shape[0];
@@ -26,7 +26,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             var maxIndexAndValue = GetMaxIndexAndValue(data, batchSize, tNum, numClasses);
             int[] ignored_tokens = getIgnoredTokens();
 
-            InferenceResult[] results = new InferenceResult[batchSize];
+            RecResult[] results = new RecResult[batchSize];
             for (int i = 0; i < batchSize; i++)
             {
                 int[] token_indices = maxIndexAndValue.Indices[i];
@@ -37,7 +37,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                 string text = GetCharList(token_indices, selection, charList);
                 float avgConf = (float)Math.Round(confList.Average(), 5);
 
-                results[i] = new InferenceResult(text, avgConf);
+                results[i] = new RecResult(text, avgConf);
                 if (_ocrConfig.ReturnWordBox)
                 {
                     var wordInfo = GetWordInfo(text, selection, confList);

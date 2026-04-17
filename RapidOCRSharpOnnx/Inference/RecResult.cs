@@ -4,13 +4,13 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Inference
 {
-    public struct InferenceResult
+    public struct RecResult
     {
         public string Label { get; set; }
         public float Score { get; set; }
         public WordInfo WordInfo { get; set; }
 
-        public InferenceResult(string label, float score)
+        public RecResult(string label, float score)
         {
             Label = label;
             Score = score;
