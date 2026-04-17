@@ -1,9 +1,6 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
-using RapidOCRSharpOnnx.Config;
 using RapidOCRSharpOnnx.Configurations;
-using RapidOCRSharpOnnx.Inference.PPOCR_Det;
-using RapidOCRSharpOnnx.InferenceEngine;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

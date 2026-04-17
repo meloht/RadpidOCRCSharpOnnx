@@ -1,7 +1,5 @@
 ﻿using OpenCvSharp;
-using RapidOCRSharpOnnx.Config;
 using RapidOCRSharpOnnx.Configurations;
-using RapidOCRSharpOnnx.InferenceEngine;
 using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
@@ -35,10 +33,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         private DataTensorDimensions PreprocessImage(Mat image)
         {
             int maxWh = Math.Max(image.Width, image.Height);
-            int limitSideLen = DetConfig.LimitSideLen;
-            if (DetConfig.LimitType == LimitType.Min)
+            int limitSideLen = _ocrConfig.DetectorConfig.LimitSideLen;
+            if (_ocrConfig.DetectorConfig.LimitType == LimitType.Min)
+
             {
-                limitSideLen = DetConfig.LimitSideLen;
+                limitSideLen = _ocrConfig.DetectorConfig.LimitSideLen;
             }
             else if (maxWh < 960)
             {

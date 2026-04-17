@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RapidOCRSharpOnnx.InferenceEngine
+namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
     public struct DataTensorDimensions
     {
@@ -14,14 +14,10 @@ namespace RapidOCRSharpOnnx.InferenceEngine
         public int PaddingTop { get; set; }
         public int PaddingLeft { get; set; }
 
-        public DataTensorDimensions(float[] data, long[] dimensions, float ratioH = 1.0f, float ratioW = 1.0f, int paddingTop = 0, int paddingLeft = 0)
+        public DataTensorDimensions(float[] data, long[] dimensions)
         {
             Data = data;
             Dimensions = dimensions;
-            RatioH = ratioH;
-            RatioW = ratioW;
-            PaddingTop = paddingTop;
-            PaddingLeft = paddingLeft;
         }
     }
 }

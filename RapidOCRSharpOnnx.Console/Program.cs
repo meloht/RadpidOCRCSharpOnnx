@@ -1,7 +1,5 @@
 ﻿
 using OpenCvSharp;
-using RapidOCRSharpOnnx.Config;
-using RapidOCRSharpOnnx.InferenceEngine;
 using RapidOCRSharpOnnx.Utils;
 using System.Runtime.InteropServices;
 namespace RapidOCRSharpOnnx.ConsoleApp

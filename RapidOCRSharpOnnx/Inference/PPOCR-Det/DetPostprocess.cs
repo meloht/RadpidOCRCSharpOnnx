@@ -1,7 +1,8 @@
 ﻿using Clipper2Lib;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
-using RapidOCRSharpOnnx.Config;
+using RapidOCRSharpOnnx.Configurations;
+using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,6 +13,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
     {
         private const int _minSize = 3;
         private const int _BOX_SORT_Y_THRESHOLD = 10;
+        private DetectorConfig _detConfig;
+        public DetPostprocess(DetectorConfig detConfig)
+        {
+            _detConfig = detConfig;
+        }
 
         public DetectResult PostProcess(Mat image, OrtValue output)
         {
@@ -42,11 +48,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             matPred.SetArray(dataArray.ToArray());
 
             Mat mask = new Mat();
-            Cv2.Threshold(matPred, mask, DetConfig.Thresh, 255, ThresholdTypes.Binary);
+            Cv2.Threshold(matPred, mask, _detConfig.Thresh, 255, ThresholdTypes.Binary);
 
 
             mask.ConvertTo(mask, MatType.CV_8UC1); // 转为8位单通道（FindContours要求）
-            if (DetConfig.UseDilation)
+            if (_detConfig.UseDilation)
             {
                 Mat kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
 
@@ -232,7 +238,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             Cv2.FindContours(mask, out contours, out hierarchy, RetrievalModes.List, ContourApproximationModes.ApproxSimple);
 
             // 限制最大轮廓数量
-            int numContours = Math.Min(contours.Length, DetConfig.MaxCandidates);
+            int numContours = Math.Min(contours.Length, _detConfig.MaxCandidates);
 
             List<Point2f[]> boxesList = new List<Point2f[]>();
             List<float> scoresList = new List<float>();
@@ -248,11 +254,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
                 // 计算分数
 
-                float score = DetConfig.ScoreMode == "fast"
+                float score = _detConfig.ScoreMode == ScoreMode.FAST
                     ? BoxScoreFast(matPred, miniBox)
                     : BoxScoreSlow(matPred, contour);
 
-                if (score < DetConfig.BoxThresh)
+                if (score < _detConfig.BoxThresh)
                     continue;
 
                 // 膨胀多边形
@@ -278,7 +284,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             // 1. 计算多边形的面积和周长
             double area = Cv2.ContourArea(box);
             double length = Cv2.ArcLength(box, true); // true 表示封闭多边形
-            double distance = area * DetConfig.UnclipRatio / length; // 扩张距离（像素单位）
+            double distance = area * _detConfig.UnclipRatio / length; // 扩张距离（像素单位）
 
             // 2. 将 OpenCV 点转换为 Clipper 所需的 Path64（使用 long 类型）
 

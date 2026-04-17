@@ -1,6 +1,5 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using RapidOCRSharpOnnx.Configurations;
-using RapidOCRSharpOnnx.InferenceEngine;
 using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
