@@ -50,13 +50,7 @@ namespace RapidOCRSharpOnnx.Utils
     public enum OCRVersion
     {
         PPOCRV4,
-        PPOCRV5,
-        Null
-    }
-
-    public enum EngineType
-    {
-        ONNXRUNTIME
+        PPOCRV5
     }
 
     public enum ModelType

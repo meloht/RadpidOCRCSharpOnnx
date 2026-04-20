@@ -1,24 +1,58 @@
 ﻿using OpenCvSharp;
+using RapidOCRSharpOnnx.Configurations;
+using RapidOCRSharpOnnx.Inference;
+using RapidOCRSharpOnnx.Inference.PPOCR_Det;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace RapidOCRSharpOnnx.Utils
 {
-    internal class OcrDrawerSkia
+    internal class OcrDrawerSkia : IDisposable
     {
         private readonly SKTypeface _typeface;
         private readonly Random _rand = new Random(0);
 
-        public float TextScore = 0.5f;
+        public float TextScore = 0.4f;
+        private readonly TextCalRecBox _textCalRecBox;
+        private readonly OcrConfig _ocrConfig;
 
-        public OcrDrawerSkia(string fontPath)
+        public OcrDrawerSkia(OcrConfig ocrConfig)
         {
+            _ocrConfig = ocrConfig;
+            string fontPath = UtilsHelper.GetFontPath(ocrConfig.RecognizerConfig.LangRec);
             _typeface = SKTypeface.FromFile(fontPath);
+            _textCalRecBox = new TextCalRecBox(ocrConfig);
         }
 
-        public SKBitmap DrawOcrBoxTxt(SKBitmap image, Point2f[][] dtBoxes, List<string> txts, List<float>? scores = null)
+        public void DrawTextBlock(Mat image, string savePath, DetectResult detResult, RecResult[] recResults)
+        {
+            UtilsHelper.MapBoxesToOriginal(detResult.Boxes, detResult.RatioH, detResult.RatioW, detResult.PaddingTop, detResult.PaddingLeft, image.Height, image.Width);
+
+            var croppedImgList = UtilsHelper.MapImgToOriginal(detResult.ImgCropList, detResult.RatioH, detResult.RatioW);
+            var resCorp = _textCalRecBox.CalRecBoxes(croppedImgList, recResults, detResult.Boxes);
+
+            using var input = Convert(image);
+
+            SKBitmap result = null;
+            if (resCorp.boxes == null || resCorp.boxes.Count == 0)
+            {
+                result = DrawOcrBoxTxt(input, detResult.Boxes, recResults.Select(p => p.Label).ToList(), recResults.Select(p => p.Score).ToList());
+            }
+            else
+            {
+                result = DrawOcrBoxTxt(input, resCorp.boxes.ToArray(), resCorp.words, resCorp.confs);
+            }
+            using var img = SKImage.FromBitmap(result);
+            using var data = img.Encode(SKEncodedImageFormat.Jpeg, 100);
+
+            File.WriteAllBytes(savePath, data.ToArray());
+        }
+
+        private SKBitmap DrawOcrBoxTxt(SKBitmap image, Point2f[][] dtBoxes, List<string> txts, List<float>? scores = null)
         {
             int w = image.Width;
             int h = image.Height;
@@ -267,6 +301,154 @@ namespace RapidOCRSharpOnnx.Utils
             }
 
             return low;
+        }
+        private SKBitmap MatToSKBitmapFast(Mat mat)
+        {
+            if (mat.Empty())
+                throw new ArgumentException("Mat is empty");
+
+            Mat converted = new Mat();
+
+            if (mat.Channels() == 3)
+            {
+                Cv2.CvtColor(mat, converted, ColorConversionCodes.BGR2BGRA);
+            }
+            else if (mat.Channels() == 4)
+            {
+                converted = mat;
+            }
+            else if (mat.Channels() == 1)
+            {
+                Cv2.CvtColor(mat, converted, ColorConversionCodes.GRAY2BGRA);
+            }
+            else
+            {
+                throw new NotSupportedException("Unsupported format");
+            }
+
+            var bitmap = new SKBitmap(
+                converted.Width,
+                converted.Height,
+                SKColorType.Bgra8888,
+                SKAlphaType.Premul
+            );
+
+            unsafe
+            {
+                Buffer.MemoryCopy(
+                    (void*)converted.DataPointer,
+                    (void*)bitmap.GetPixels().ToPointer(),
+                    converted.Total() * converted.ElemSize(),
+                    converted.Total() * converted.ElemSize()
+                );
+            }
+
+            return bitmap;
+        }
+
+        private unsafe SKBitmap Convert(Mat mat)
+        {
+            if (mat.Empty())
+                throw new ArgumentException("Mat empty");
+
+            if (mat.Type() != MatType.CV_8UC3)
+                throw new NotSupportedException("Only CV_8UC3 supported");
+
+            int width = mat.Width;
+            int height = mat.Height;
+
+            var bitmap = new SKBitmap(width, height, SKColorType.Bgra8888, SKAlphaType.Premul);
+
+            byte* src = (byte*)mat.DataPointer;
+            byte* dst = (byte*)bitmap.GetPixels().ToPointer();
+
+            int srcStride = (int)mat.Step();
+            int dstStride = bitmap.RowBytes;
+
+            if (Avx2.IsSupported)
+            {
+                ConvertAvx2(src, dst, width, height, srcStride, dstStride);
+            }
+            else
+            {
+                ConvertScalar(src, dst, width, height, srcStride, dstStride);
+            }
+
+            return bitmap;
+        }
+
+        private unsafe void ConvertAvx2(byte* src, byte* dst, int width, int height, int srcStride, int dstStride)
+        {
+            Vector256<byte> alpha = Vector256.Create((byte)255);
+
+            for (int y = 0; y < height; y++)
+            {
+                byte* s = src + y * srcStride;
+                byte* d = dst + y * dstStride;
+
+                int x = 0;
+
+                // 每次处理 8 像素（24字节 -> 32字节）
+                for (; x <= width - 8; x += 8)
+                {
+                    // 加载 24 bytes（分三段）
+                    Vector256<byte> v0 = Avx.LoadVector256(s);        // 实际会多读，但安全前提：padding足够
+                    Vector256<byte> v1 = Avx.LoadVector256(s + 8);
+                    Vector256<byte> v2 = Avx.LoadVector256(s + 16);
+
+                    byte* tmp = stackalloc byte[32];
+
+                    for (int i = 0; i < 8; i++)
+                    {
+                        tmp[i * 4 + 0] = s[i * 3 + 0];
+                        tmp[i * 4 + 1] = s[i * 3 + 1];
+                        tmp[i * 4 + 2] = s[i * 3 + 2];
+                        tmp[i * 4 + 3] = 255;
+                    }
+
+                    var result = Avx.LoadVector256(tmp);
+                    Avx.Store(d, result);
+
+                    s += 24;
+                    d += 32;
+                }
+
+                // 尾部处理
+                for (; x < width; x++)
+                {
+                    d[0] = s[0];
+                    d[1] = s[1];
+                    d[2] = s[2];
+                    d[3] = 255;
+
+                    s += 3;
+                    d += 4;
+                }
+            }
+        }
+        private unsafe void ConvertScalar(byte* src, byte* dst, int width, int height, int srcStride, int dstStride)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                byte* s = src + y * srcStride;
+                byte* d = dst + y * dstStride;
+
+                for (int x = 0; x < width; x++)
+                {
+                    d[0] = s[0];
+                    d[1] = s[1];
+                    d[2] = s[2];
+                    d[3] = 255;
+
+                    s += 3;
+                    d += 4;
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            _typeface?.Dispose();
         }
     }
 }

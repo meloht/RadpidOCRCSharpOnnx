@@ -21,7 +21,7 @@ namespace RapidOCRSharpOnnx.Configurations
 
         public RecognizerConfig RecognizerConfig { get; set; }
 
-        public OcrConfig(string detectorModelPath, string recognizerModelPath, OCRVersion ocrVersion, string classifierModelPath = null)
+        public OcrConfig(string detectorModelPath, string recognizerModelPath, LangRec langRec, OCRVersion ocrVersion, string classifierModelPath = null)
         {
             if (string.IsNullOrWhiteSpace(detectorModelPath))
             {
@@ -33,24 +33,16 @@ namespace RapidOCRSharpOnnx.Configurations
             }
 
             DetectorConfig = new DetectorConfig { ModelPath = detectorModelPath };
-            RecognizerConfig = new RecognizerConfig { ModelPath = recognizerModelPath };
+            RecognizerConfig = new RecognizerConfig { ModelPath = recognizerModelPath, LangRec = langRec };
 
-            if (!string.IsNullOrWhiteSpace(classifierModelPath) || ocrVersion != OCRVersion.Null)
+            if (!string.IsNullOrWhiteSpace(classifierModelPath) )
             {
-                if (!string.IsNullOrWhiteSpace(classifierModelPath) && ocrVersion != OCRVersion.Null)
-                {
-
-                    ClassifierConfig = new ClassifierConfig { OCRVersion = ocrVersion, ModelPath = classifierModelPath };
-                }
-                else
-                {
-                    throw new ArgumentException("Classifier ModelPath is null or empty, or OCRVersion is Null.");
-                }
+                ClassifierConfig = new ClassifierConfig { OCRVersion = ocrVersion, ModelPath = classifierModelPath };
             }
-           
+
         }
 
-        public OcrConfig(string detectorModelPath, string recognizerModelPath) : this(detectorModelPath, recognizerModelPath, OCRVersion.Null)
+        public OcrConfig(string detectorModelPath, string recognizerModelPath, LangRec langRec, OCRVersion ocrVersion) : this(detectorModelPath, recognizerModelPath, langRec, ocrVersion, null)
         {
 
         }

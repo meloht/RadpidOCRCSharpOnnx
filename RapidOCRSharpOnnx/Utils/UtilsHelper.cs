@@ -10,6 +10,32 @@ namespace RapidOCRSharpOnnx.Utils
     public static class UtilsHelper
     {
 
+        public static string GetFontPath(LangRec langRec)
+        {
+            string fontFileName = langRec switch
+            {
+                LangRec.CH => "FZYTK.TTF",
+                LangRec.CH_DOC => "FZYTK.TTF",
+                LangRec.EN => "FZYTK.TTF",
+                LangRec.ARABIC => "arabic.ttf",
+                LangRec.CHINESE_CHT => "chinese_cht.ttf",
+                LangRec.CYRILLIC => "cyrillic.ttf",
+                LangRec.ESLAV => "cyrillic.ttf",
+                LangRec.DEVANAGARI => "devanagari_Martel-Regular.ttf",
+                LangRec.JAPAN => "japan.ttc",
+                LangRec.KOREAN => "korean.ttf",
+                LangRec.KA => "kannada.ttf",
+                LangRec.LATIN => "latin.ttf",
+                LangRec.TA => "kannada.ttf",
+                LangRec.TE => "telugu.ttf",
+                LangRec.TH => "th.ttf",
+                LangRec.EL => "el.ttf",
+                _ => throw new ArgumentOutOfRangeException(nameof(langRec), $"Unsupported language: {langRec}")
+            };
+
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "fonts", fontFileName);
+        }
+
         public static bool IsChineseChar(char ch)
         {
             // 对应Python的Unicode范围判断：
