@@ -20,7 +20,7 @@ namespace RapidOCRSharpOnnx
         private IOcrRecognizer _ocrRecognizer;
         private OcrDrawerSkia _ocrDrawerSkia;
 
-        public OcrConfig OcrConfig
+        public OcrConfig Configuration
         {
             get { return _executionProvider.OcrConfig; }
         }
@@ -32,7 +32,7 @@ namespace RapidOCRSharpOnnx
             _ocrDetector = _executionProvider.CreateDetector();
             _ocrClassifier = _executionProvider.CreateClassifier();
             _ocrRecognizer = _executionProvider.CreateRecognizer();
-            _ocrDrawerSkia = new OcrDrawerSkia(OcrConfig);
+            _ocrDrawerSkia = new OcrDrawerSkia(Configuration);
         }
 
         public void RecognizeText(string imagePath, string savePath = null)
