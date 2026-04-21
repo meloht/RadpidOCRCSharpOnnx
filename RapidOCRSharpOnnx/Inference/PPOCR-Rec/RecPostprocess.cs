@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 {
-    public class RecPostprocess: IRecPostprocess
+    public class RecPostprocess : IRecPostprocess
     {
         private OcrConfig _ocrConfig;
         public RecPostprocess(OcrConfig ocrConfig)
@@ -99,6 +99,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             if (validCol.Count == 0)
                 return new WordInfo(); // 无有效字符
 
+            List<WordItem> wordItems = new List<WordItem>();
+
             float[] colWidth = new float[validCol.Count];
             for (int i = 1; i < validCol.Count; i++)
             {
@@ -109,11 +111,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             int minVal = text.Length > 0 && UtilsHelper.IsChineseChar(text[0]) ? 3 : 2;
             colWidth[0] = Math.Min(minVal, firstColValue);
 
-            var wordList = new List<char[]>();
-            var wordColList = new List<int[]>();
-            var stateList = new List<WordType>();
-
-            var wordConfList = new List<float[]>();
 
             var wordContent = new List<char>();
             var wordColContent = new List<int>();
@@ -131,10 +128,15 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                 {
                     if (wordContent.Count > 0)
                     {
-                        wordList.Add(wordContent.ToArray());
-                        wordColList.Add(wordColContent.ToArray());
-                        wordConfList.Add(confArr.ToArray());
-                        stateList.Add(state!.Value);
+                        WordItem wordItem = new WordItem
+                        {
+                            Words = wordContent.ToArray(),
+                            WordCols = wordColContent.ToArray(),
+                            WordType = state.Value,
+                            Confs = confArr.ToArray()
+                        };
+                        wordItems.Add(wordItem);
+
                         wordContent.Clear();
                         wordColContent.Clear();
                         confArr.Clear();
@@ -154,10 +156,16 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                 {
                     if (wordContent.Count > 0)
                     {
-                        wordList.Add(wordContent.ToArray());
-                        wordColList.Add(wordColContent.ToArray());
-                        wordConfList.Add(confArr.ToArray());
-                        stateList.Add(state.Value);
+
+                        WordItem wordItem = new WordItem
+                        {
+                            Words = wordContent.ToArray(),
+                            WordCols = wordColContent.ToArray(),
+                            WordType = state.Value,
+                            Confs = confArr.ToArray()
+                        };
+                        wordItems.Add(wordItem);
+
                         wordContent.Clear();
                         wordColContent.Clear();
                         confArr.Clear();
@@ -175,13 +183,18 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             // 处理最后一个单词
             if (wordContent.Count > 0)
             {
-                wordList.Add(wordContent.ToArray());
-                wordColList.Add(wordColContent.ToArray());
-                stateList.Add(state!.Value);
-                wordConfList.Add(confArr.ToArray());
+                WordItem wordItem = new WordItem
+                {
+                    Words = wordContent.ToArray(),
+                    WordCols = wordColContent.ToArray(),
+                    WordType = state.Value,
+                    Confs = confArr.ToArray()
+                };
+                wordItems.Add(wordItem);
             }
-
-            return new WordInfo(wordList, wordColList, stateList, wordConfList);
+            WordInfo res = new WordInfo();
+            res.WordItems = wordItems;
+            return res;
 
         }
         private List<float> GetConfList(float[][] values, int batchIdx, bool[] selection)

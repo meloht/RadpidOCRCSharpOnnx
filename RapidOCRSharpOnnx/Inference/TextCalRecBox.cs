@@ -489,7 +489,7 @@ namespace RapidOCRSharpOnnx.Inference
             float avgColWidth = (bboxPoints.XMax - bboxPoints.XMin) / wordInfo.LineTxtLen;
 
             // 判断：是否全为英文/数字
-            bool isAllEnNum = wordInfo.WordTypes.All(v => v == WordType.EN_NUM);
+            bool isAllEnNum = wordInfo.WordItems.All(v => v.WordType == WordType.EN_NUM);
 
             List<int[]> lineCols = new List<int[]>();
             List<int> lineCols2 = new List<int>();
@@ -497,12 +497,11 @@ namespace RapidOCRSharpOnnx.Inference
             float charWidthsAvg = 0.0f;
             int charCount = 0;
             // 遍历单词 + 单词列索引
-            for (int i = 0; i < wordInfo.Words.Count; i++)
+            for (int i = 0; i < wordInfo.WordItems.Count; i++)
             {
-                var word = wordInfo.Words[i];
-                var wordCol = wordInfo.WordCols[i];
-                var conf = wordInfo.Confs[i];
-
+                var word = wordInfo.WordItems[i].Words;
+                var wordCol = wordInfo.WordItems[i].WordCols;
+                var conf = wordInfo.WordItems[i].Confs;
                 // 全英文数字 + 不返回单字框 → 按单词处理
                 if (isAllEnNum && !_ocrConfig.ReturnSingleCharBox)
                 {

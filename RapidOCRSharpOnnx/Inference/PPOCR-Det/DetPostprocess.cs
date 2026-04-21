@@ -101,13 +101,13 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         private Mat GetRotateCropImage(Mat img, Point2f[] points)
         {
             // 计算宽度
-            float width1 = Distance(points[0], points[1]);
-            float width2 = Distance(points[2], points[3]);
+            float width1 = UtilsHelper.Distance(points[0], points[1]);
+            float width2 = UtilsHelper.Distance(points[2], points[3]);
             int imgCropWidth = (int)Math.Max(width1, width2);
 
             // 计算高度
-            float height1 = Distance(points[0], points[3]);
-            float height2 = Distance(points[1], points[2]);
+            float height1 = UtilsHelper.Distance(points[0], points[3]);
+            float height2 = UtilsHelper.Distance(points[1], points[2]);
             int imgCropHeight = (int)Math.Max(height1, height2);
 
             // 目标矩形
@@ -143,14 +143,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             }
 
             return dstImg;
-        }
-
-        private float Distance(Point2f p1, Point2f p2)
-        {
-            return (float)Math.Sqrt(
-                (p1.X - p2.X) * (p1.X - p2.X) +
-                (p1.Y - p2.Y) * (p1.Y - p2.Y)
-            );
         }
 
         /// <summary>
