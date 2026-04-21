@@ -2,6 +2,7 @@
 using OpenCvSharp;
 using RapidOCRSharpOnnx.Configurations;
 using RapidOCRSharpOnnx.Models;
+using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,10 +40,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             return new List<string>();
         }
 
-        public RecResult[] TextRecognize(Mat[] imgList)
+        public RecResult[] TextRecognize(DisposableList<Mat> imgList)
         {
-            int[] indices = new int[imgList.Length];
-            float[] widthList = new float[imgList.Length];
+            int[] indices = new int[imgList.Count];
+            float[] widthList = new float[imgList.Count];
             for (int i = 0; i < indices.Length; i++)
             {
                 indices[i] = i;
@@ -50,7 +51,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             }
 
             Array.Sort(indices, (a, b) => widthList[a].CompareTo(widthList[b]));
-            int imgCount = imgList.Length;
+            int imgCount = imgList.Count;
 
             RecResult[] rec_res = new RecResult[imgCount];
             for (int i = 0; i < imgCount; i++)

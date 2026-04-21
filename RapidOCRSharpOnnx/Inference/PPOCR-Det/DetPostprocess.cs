@@ -25,14 +25,14 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             var res = DBPostProcess(output, image.Height, image.Width);
 
             SortedBoxes(res.DetPostprocessItems);
-            var imgCropList = new List<Mat>();
+            var imgCropList = new DisposableList<Mat>();
 
             foreach (var item in res.DetPostprocessItems)
             {
                 var imgCrop = GetRotateCropImage(image, item.Box);
                 imgCropList.Add(imgCrop);
             }
-            res.ImgCropList = imgCropList.ToArray();
+            res.ImgCropList = imgCropList;
             return res;
         }
 

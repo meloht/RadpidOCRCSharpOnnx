@@ -40,10 +40,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
         }
 
 
-        public ClsResult[] TextClassify(Mat[] imgList)
+        public ClsResult[] TextClassify(DisposableList<Mat> imgList)
         {
-            int[] indices = new int[imgList.Length];
-            float[] widthList = new float[imgList.Length];
+            int[] indices = new int[imgList.Count];
+            float[] widthList = new float[imgList.Count];
             for (int i = 0; i < indices.Length; i++)
             {
                 indices[i] = i;
@@ -51,7 +51,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             }
 
             Array.Sort(indices, (a, b) => widthList[a].CompareTo(widthList[b]));
-            int imgCount = imgList.Length;
+            int imgCount = imgList.Count;
             ClsResult[] cls_res = new ClsResult[imgCount];
             for (int i = 0; i < imgCount; i++)
             {

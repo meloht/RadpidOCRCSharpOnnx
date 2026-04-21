@@ -1,5 +1,6 @@
 ﻿using OpenCvSharp;
 using RapidOCRSharpOnnx.Inference.PPOCR_Det.Models;
+using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,7 +10,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
     public class DetectResult
     {
         public DetBoxItem[] DetPostprocessItems { get; set; }
-        public Mat[] ImgCropList { get; set; }
+        public DisposableList<Mat> ImgCropList { get; set; }
         public float RatioH { get; set; }
         public float RatioW { get; set; }
 
