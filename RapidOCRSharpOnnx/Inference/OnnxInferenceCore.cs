@@ -35,5 +35,12 @@ namespace RapidOCRSharpOnnx.Inference
         {
             return _session.Run(_runOptions, _session.InputNames, [inputOrtValue], _session.OutputNames); 
         }
+
+        public void DisposeBase()
+        {
+            _session?.Dispose();
+            _options?.Dispose();
+            _runOptions?.Dispose();
+        }
     }
 }

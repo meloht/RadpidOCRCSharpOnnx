@@ -15,9 +15,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
         protected IRecPreprocess _recPreprocess;
         protected IRecPostprocess _recPostprocess;
         protected readonly string[] _charList;
-
         protected OcrConfig _ocrConfig;
-
 
         public TextRecognizerBase(InferenceSession session, SessionOptions options, IRecPostprocess postprocess, IRecPreprocess preprocess, OcrConfig ocrConfig)
             : base(session, options)
@@ -112,11 +110,5 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             return rec_res;
         }
 
-        public void DisposeBase()
-        {
-            _session?.Dispose();
-            _options?.Dispose();
-            _runOptions?.Dispose();
-        }
     }
 }

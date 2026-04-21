@@ -39,11 +39,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         }
 
 
-        public void DisposeBase()
-        {
-            _session?.Dispose();
-            _options?.Dispose();
-            _runOptions?.Dispose();
-        }
+
     }
 }
