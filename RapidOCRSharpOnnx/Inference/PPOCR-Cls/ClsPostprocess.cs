@@ -1,8 +1,8 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
-using RapidOCRSharpOnnx.Config;
 using RapidOCRSharpOnnx.Configurations;
-using RapidOCRSharpOnnx.InferenceEngine;
+using RapidOCRSharpOnnx.Models;
+using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,7 +16,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
         {
             _classifierConfig = clsConfig;
         }
-        public void ClsPostProcess(OrtValue ortValue,int ij, Mat[] imgList, InferenceResult[] cls_res)
+        public void ClsPostProcess(OrtValue ortValue,int ij, DisposableList<Mat> imgList, ClsResult[] cls_res)
         {
             var shapeInfo = ortValue.GetTensorTypeAndShape();
             int batchSize = (int)shapeInfo.Shape[0];

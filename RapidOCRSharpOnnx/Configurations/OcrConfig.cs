@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RapidOCRSharpOnnx.Utils;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -19,5 +20,34 @@ namespace RapidOCRSharpOnnx.Configurations
         public ClassifierConfig ClassifierConfig { get; set; }
 
         public RecognizerConfig RecognizerConfig { get; set; }
+
+        public OcrConfig(string detectorModelPath, string recognizerModelPath, LangRec langRec, OCRVersion ocrVersion, string classifierModelPath = null)
+        {
+            if (string.IsNullOrWhiteSpace(detectorModelPath))
+            {
+                throw new ArgumentException("Detector ModelPath is null or empty.");
+            }
+            if (string.IsNullOrWhiteSpace(recognizerModelPath))
+            {
+                throw new ArgumentException("Recognizer ModelPath is null or empty.");
+            }
+
+            DetectorConfig = new DetectorConfig { ModelPath = detectorModelPath };
+            RecognizerConfig = new RecognizerConfig { ModelPath = recognizerModelPath, LangRec = langRec };
+
+            if (!string.IsNullOrWhiteSpace(classifierModelPath) )
+            {
+                ClassifierConfig = new ClassifierConfig { OCRVersion = ocrVersion, ModelPath = classifierModelPath };
+            }
+
+        }
+
+        public OcrConfig(string detectorModelPath, string recognizerModelPath, LangRec langRec, OCRVersion ocrVersion) : this(detectorModelPath, recognizerModelPath, langRec, ocrVersion, null)
+        {
+
+        }
+
+
+
     }
 }

@@ -7,22 +7,16 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 {
     public class ClsPreprocess: IClsPreprocess
     {
-        private int[] ClsImageShape;
-        public ClsPreprocess(int[] clsImageShape)
-        {
-            if (clsImageShape.Length != 3)
-                throw new ArgumentException($"The length of clsImageShape should be 3, but got {clsImageShape.Length}");
-            ClsImageShape = clsImageShape;
-        }
-        public int ResizeNormImg(Mat img, int idx, float[] inputData)
+
+        public int ResizeNormImg(Mat img, int idx, float[] inputData, int[] clsImageShape)
         {
             // 获取原图尺寸和通道数
             int h = img.Height;
             int w = img.Width;
             int channels = img.Channels();
-            int img_c = ClsImageShape[0];
-            int img_h = ClsImageShape[1];
-            int img_w = ClsImageShape[2];
+            int img_c = clsImageShape[0];
+            int img_h = clsImageShape[1];
+            int img_w = clsImageShape[2];
 
             if (img_c != channels)
                 throw new ArgumentException($"The count of image channels does not match：expect {img_c}，actual {channels}");

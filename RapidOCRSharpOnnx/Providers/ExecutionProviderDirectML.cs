@@ -1,15 +1,16 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using RapidOCRSharpOnnx.Configurations;
 using RapidOCRSharpOnnx.Inference;
+using RapidOCRSharpOnnx.Inference.PPOCR_Cls;
 using RapidOCRSharpOnnx.Inference.PPOCR_Det;
-using RapidOCRSharpOnnx.Utils;
+using RapidOCRSharpOnnx.Inference.PPOCR_Rec;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace RapidOCRSharpOnnx.Providers
 {
-    public class ExecutionProviderDirectML: ExecutionProvider, IExecutionProvider
+    public class ExecutionProviderDirectML : ExecutionProvider
     {
         private int _deviceId;
 
@@ -18,29 +19,33 @@ namespace RapidOCRSharpOnnx.Providers
             _deviceId = deviceId;
         }
 
-        public IOcrDetector CreateDetector()
+        protected override SessionOptions BuildSessionOptions()
         {
-            throw new NotImplementedException();
+            SessionOptions sessionOptions = new SessionOptions();
+            sessionOptions.GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL;
+            sessionOptions.AppendExecutionProvider_DML(this._deviceId);
+            sessionOptions.EnableCpuMemArena = true;
+            return sessionOptions;
         }
 
-        protected override IOcrClassifier GetClassifier(InferenceSession session, SessionOptions options)
+        protected override IOcrClassifier CreateOcrClassifier(InferenceSession session, SessionOptions options, IClsPostprocess postprocess, IClsPreprocess preprocess)
         {
-            throw new NotImplementedException();
+            return new TextClassifierIoBinding(session, options, postprocess, preprocess, OcrConfig);
         }
 
-        protected override IOcrDetector GetDetector(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
+        protected override IOcrDetector CreateOcrDetector(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess)
         {
-            throw new NotImplementedException();
+            return new TextDetectorIoBinding(session, options, postprocess, preprocess);
+        }
+
+        protected override IOcrRecognizer CreateOcrRecognizer(InferenceSession session, SessionOptions options, IRecPostprocess postprocess, IRecPreprocess preprocess)
+        {
+            return new TextRecognizerIoBinding(session, options, postprocess, preprocess, OcrConfig);
         }
 
         protected override DeviceType GetDeviceType()
         {
-            throw new NotImplementedException();
-        }
-
-        protected override IOcrRecognizer GetRecognizer(InferenceSession session, SessionOptions options)
-        {
-            throw new NotImplementedException();
+            return DeviceType.GPU;
         }
     }
 }

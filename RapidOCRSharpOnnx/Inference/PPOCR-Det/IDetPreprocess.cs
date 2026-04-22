@@ -1,5 +1,4 @@
 ﻿using OpenCvSharp;
-using RapidOCRSharpOnnx.InferenceEngine;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,6 +7,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
     public interface IDetPreprocess
     {
-        DataTensorDimensions Preprocess(Mat image);
+        DetPreprocessData Preprocess(Mat image, Mat resizedImg);
     }
 }

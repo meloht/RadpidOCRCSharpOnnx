@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RapidOCRSharpOnnx.Utils
 {
-    public enum DeviceType
+    public enum DeviceVendorType
     {
         CPU,
         CUDA,
@@ -50,12 +50,7 @@ namespace RapidOCRSharpOnnx.Utils
     public enum OCRVersion
     {
         PPOCRV4,
-        PPOCRV5,
-    }
-
-    public enum EngineType
-    {
-        ONNXRUNTIME
+        PPOCRV5
     }
 
     public enum ModelType

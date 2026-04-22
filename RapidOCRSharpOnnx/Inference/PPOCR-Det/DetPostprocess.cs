@@ -1,36 +1,46 @@
 ﻿using Clipper2Lib;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
-using RapidOCRSharpOnnx.Config;
+using RapidOCRSharpOnnx.Configurations;
+using RapidOCRSharpOnnx.Inference.PPOCR_Det.Models;
+using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
-    public class DetPostprocess: IDetPostprocess
+    public class DetPostprocess : IDetPostprocess
     {
         private const int _minSize = 3;
         private const int _BOX_SORT_Y_THRESHOLD = 10;
+        private DetectorConfig _detConfig;
+        public DetPostprocess(DetectorConfig detConfig)
+        {
+            _detConfig = detConfig;
+        }
 
-        public DetectResult PostProcess(Mat image, OrtValue output)
+        public DetResult PostProcess(Mat image, OrtValue output)
         {
             var res = DBPostProcess(output, image.Height, image.Width);
 
-            var boxes = SortedBoxes(res.boxes);
-            var imgCropList = new List<Mat>();
-         
-            foreach (var item in boxes)
+            SortedBoxes(res.DetItems);
+            var imgCropList = new DisposableList<Mat>();
+
+            foreach (var item in res.DetItems)
             {
-                var imgCrop = GetRotateCropImage(image, item);
+                var imgCrop = GetRotateCropImage(image, item.Box);
                 imgCropList.Add(imgCrop);
             }
-
-            return new DetectResult(boxes, imgCropList);
+            res.ImgCropList = imgCropList;
+            return res;
         }
 
-        private (List<Point2f[]> boxes, List<float> scores) DBPostProcess(OrtValue output, int oriHeight, int oriWidth)
+        private DetResult DBPostProcess(OrtValue output, int oriHeight, int oriWidth)
         {
+            List<Point2f[]> boxes = new List<Point2f[]>();
+            List<float> scores = new List<float>();
+
             var shape = output.GetTensorTypeAndShape().Shape;
             //获取OrtValue维度[1, 1, H, W]
             var dataArray = output.GetTensorDataAsSpan<float>();
@@ -42,69 +52,62 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             matPred.SetArray(dataArray.ToArray());
 
             Mat mask = new Mat();
-            Cv2.Threshold(matPred, mask, DetConfig.Thresh, 255, ThresholdTypes.Binary);
+            Cv2.Threshold(matPred, mask, _detConfig.Thresh, 255, ThresholdTypes.Binary);
 
 
             mask.ConvertTo(mask, MatType.CV_8UC1); // 转为8位单通道（FindContours要求）
-            if (DetConfig.UseDilation)
+            if (_detConfig.UseDilation)
             {
                 Mat kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
 
                 Cv2.Dilate(mask, mask, kernel);
             }
             mask.ConvertTo(mask, MatType.CV_8UC1, 255);
-            var (boxes, scores) = ExtractBoxesFromMask(matPred, mask, oriWidth, oriHeight);
 
-            // 5. 过滤无效框
-            var (filteredBoxes, filteredScores) = FilterBoxes(boxes, scores, oriHeight, oriWidth);
-
-            return (filteredBoxes, filteredScores);
+            return ExtractBoxesFromMask(matPred, mask, oriWidth, oriHeight);
         }
+
         /// <summary>
-        /// 对点列表进行排序：先按 Y 坐标从上到下，然后按 X 坐标从左到右，
-        /// 并使用 Y 阈值将点划分为不同的行。
+        /// 对点列表进行排序：先按 Y 坐标从上到下，然后按 X 坐标从左到右，并使用 Y 阈值将点划分为不同的行。
         /// </summary>
         /// <param name="dtBoxes">待排序的点列表（每个点代表一个边界框的左上角）</param>
-        /// <returns>排序后的点列表</returns>
-        private List<Point2f[]> SortedBoxes(List<Point2f[]> dtBoxes)
+        private void SortedBoxes(DetBoxItem[] dtBoxes)
         {
-            if (dtBoxes == null || dtBoxes.Count == 0)
-                return dtBoxes ?? new List<Point2f[]>();
+            if (dtBoxes == null || dtBoxes.Length == 0)
+                return;
 
-            // 1. 按第一个点的 Y 坐标稳定排序（OrderBy 默认稳定）
-            var sortedByY = dtBoxes.OrderBy(box => box[0].Y).ToList();
-            int n = sortedByY.Count;
+            // 1. 按第一个点的 Y 坐标稳定排序
+            Array.Sort(dtBoxes, (a, b) => a.Box[0].Y.CompareTo(b.Box[0].Y));
 
             // 2. 分配行 ID：第一个点行 ID 为 0，后续若与前一个点 Y 差 >= 阈值，则换行
-            int[] lineIds = new int[n];
-            lineIds[0] = 0;
-            for (int i = 1; i < n; i++)
+            dtBoxes[0].LineId = 0;
+            for (int i = 1; i < dtBoxes.Length; i++)
             {
-                float dy = sortedByY[i][0].Y - sortedByY[i - 1][0].Y;
-                lineIds[i] = lineIds[i - 1] + (dy >= _BOX_SORT_Y_THRESHOLD ? 1 : 0);
+                float dy = dtBoxes[i].Box[0].Y - dtBoxes[i - 1].Box[0].Y;
+                dtBoxes[i].LineId = dtBoxes[i - 1].LineId + (dy >= _BOX_SORT_Y_THRESHOLD ? 1 : 0);
+       
             }
-
             // 3. 按行 ID 升序，同一行内按 X 坐标升序排序
-            var result = sortedByY
-                .Select((box, idx) => new { Box = box, LineId = lineIds[idx] })
-                .OrderBy(item => item.LineId)          // 先按行号
-                .ThenBy(item => item.Box[0].X)         // 再按 X 坐标
-                .Select(item => item.Box)
-                .ToList();
-
-            return result;
+            Array.Sort(dtBoxes, (a, b) => 
+            {
+                int lineCompare = a.LineId.CompareTo(b.LineId);
+                if (lineCompare != 0)
+                    return lineCompare;
+                return a.Box[0].X.CompareTo(b.Box[0].X);
+            });
+           
         }
 
         private Mat GetRotateCropImage(Mat img, Point2f[] points)
         {
             // 计算宽度
-            float width1 = Distance(points[0], points[1]);
-            float width2 = Distance(points[2], points[3]);
+            float width1 = UtilsHelper.Distance(points[0], points[1]);
+            float width2 = UtilsHelper.Distance(points[2], points[3]);
             int imgCropWidth = (int)Math.Max(width1, width2);
 
             // 计算高度
-            float height1 = Distance(points[0], points[3]);
-            float height2 = Distance(points[1], points[2]);
+            float height1 = UtilsHelper.Distance(points[0], points[3]);
+            float height2 = UtilsHelper.Distance(points[1], points[2]);
             int imgCropHeight = (int)Math.Max(height1, height2);
 
             // 目标矩形
@@ -142,41 +145,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             return dstImg;
         }
 
-        private float Distance(Point2f p1, Point2f p2)
-        {
-            return (float)Math.Sqrt(
-                (p1.X - p2.X) * (p1.X - p2.X) +
-                (p1.Y - p2.Y) * (p1.Y - p2.Y)
-            );
-        }
-        private (List<Point2f[]> boxes, List<float> scores) FilterBoxes(List<Point2f[]> boxes, List<float> scores, int imgH, int imgW)
-        {
-            List<Point2f[]> filteredBoxes = new List<Point2f[]>();
-            List<float> filteredScores = new List<float>();
-
-            if (boxes.Count == 0) return (filteredBoxes, filteredScores);
-
-            for (int i = 0; i < boxes.Count; i++)
-            {
-                var box = boxes[i];
-
-                // 1. 顺时针排序点
-                OrderPointsClockwise(box);
-
-                // 2. 裁剪到图像范围内
-                ClipBox(box, imgH, imgW);
-
-                // 3. 过滤过小的框
-                float width = (float)Math.Sqrt(Math.Pow(box[1].X - box[0].X, 2) + Math.Pow(box[1].Y - box[0].Y, 2));
-                float height = (float)Math.Sqrt(Math.Pow(box[3].X - box[0].X, 2) + Math.Pow(box[3].Y - box[0].Y, 2));
-                if (width <= 3 || height <= 3) continue;
-
-                filteredBoxes.Add(box);
-                filteredScores.Add(scores[i]);
-            }
-
-            return (filteredBoxes, filteredScores);
-        }
         /// <summary>
         /// 裁剪框坐标到图像范围内
         /// </summary>
@@ -219,12 +187,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         /// <summary>
         /// 从二值化图提取检测框
         /// </summary>
-        private (List<Point2f[]>, List<float>) ExtractBoxesFromMask(Mat matPred, Mat mask, int destWidth, int destHeight)
+        private DetResult ExtractBoxesFromMask(Mat matPred, Mat mask, int destWidth, int destHeight)
         {
             int height = mask.Rows;
             int width = mask.Cols;
-
-            // 查找轮廓（对应cv2.findContours）
 
             OpenCvSharp.Point[][] contours;
             HierarchyIndex[] hierarchy;
@@ -232,10 +198,9 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             Cv2.FindContours(mask, out contours, out hierarchy, RetrievalModes.List, ContourApproximationModes.ApproxSimple);
 
             // 限制最大轮廓数量
-            int numContours = Math.Min(contours.Length, DetConfig.MaxCandidates);
+            int numContours = Math.Min(contours.Length, _detConfig.MaxCandidates);
+            List<DetBoxItem> detPostprocessItems = new List<DetBoxItem>();
 
-            List<Point2f[]> boxesList = new List<Point2f[]>();
-            List<float> scoresList = new List<float>();
 
             for (int index = 0; index < numContours; index++)
             {
@@ -248,11 +213,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
                 // 计算分数
 
-                float score = DetConfig.ScoreMode == "fast"
+                float score = _detConfig.ScoreMode == ScoreMode.FAST
                     ? BoxScoreFast(matPred, miniBox)
                     : BoxScoreSlow(matPred, contour);
 
-                if (score < DetConfig.BoxThresh)
+                if (score < _detConfig.BoxThresh)
                     continue;
 
                 // 膨胀多边形
@@ -263,13 +228,36 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
                 var box = NormalizeBox(unclipBox, width, destWidth, height, destHeight);
 
-
-                boxesList.Add(box);
-                scoresList.Add(score);
+                // 过滤无效框
+                if (FilterBoxes(box, destHeight, destWidth))
+                {
+                    detPostprocessItems.Add(new DetBoxItem(box, score, 0, null));
+                }
             }
 
-            return (boxesList, scoresList);
+            return new DetResult(detPostprocessItems.ToArray());
         }
+
+
+
+        private bool FilterBoxes(Point2f[] box, int imgH, int imgW)
+        {
+            // 1. 顺时针排序点
+            OrderPointsClockwise(box);
+
+            // 2. 裁剪到图像范围内
+            ClipBox(box, imgH, imgW);
+
+            // 3. 过滤过小的框
+            float width = (float)Math.Sqrt(Math.Pow(box[1].X - box[0].X, 2) + Math.Pow(box[1].Y - box[0].Y, 2));
+            float height = (float)Math.Sqrt(Math.Pow(box[3].X - box[0].X, 2) + Math.Pow(box[3].Y - box[0].Y, 2));
+            if (width <= 3 || height <= 3)
+            {
+                return false;
+            }
+            return true;
+        }
+
         /// <summary>
         /// 多边形膨胀（Unclip）
         /// </summary>
@@ -278,7 +266,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             // 1. 计算多边形的面积和周长
             double area = Cv2.ContourArea(box);
             double length = Cv2.ArcLength(box, true); // true 表示封闭多边形
-            double distance = area * DetConfig.UnclipRatio / length; // 扩张距离（像素单位）
+            double distance = area * _detConfig.UnclipRatio / length; // 扩张距离（像素单位）
 
             // 2. 将 OpenCV 点转换为 Clipper 所需的 Path64（使用 long 类型）
 
