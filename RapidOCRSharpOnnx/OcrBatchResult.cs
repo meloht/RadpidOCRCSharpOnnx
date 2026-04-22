@@ -1,4 +1,6 @@
-﻿using System;
+﻿using RapidOCRSharpOnnx.Inference.PPOCR_Det;
+using RapidOCRSharpOnnx.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,9 +11,12 @@ namespace RapidOCRSharpOnnx
     public class OcrBatchResult
     {
         public string ImagePath { get; set; }
-        /// <summary>
-        /// DateTimeOffset.UtcNow.ToUnixTimeMilliseconds
-        /// </summary>
-        public long StartTimestamp { get; set; }
+        public string TextBlocks { get; set; }
+
+        public DetResult DetResult { get; set; }
+
+        public ClsResult[] ClsResult { get; set; }
+
+        public RecResult[] RecResult { get; set; }
     }
 }

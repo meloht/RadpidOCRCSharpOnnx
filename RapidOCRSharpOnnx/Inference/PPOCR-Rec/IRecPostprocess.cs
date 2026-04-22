@@ -9,5 +9,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
     public interface IRecPostprocess
     {
         RecResult[] RecPostProcess(OrtValue ortValue, float[] wh_ratio_list, float max_wh_ratio, string[] charList);
+
+        RecResult RecPostProcess(OrtValue ortValue, float wh_ratio, float max_wh_ratio, string[] charList);
     }
 }

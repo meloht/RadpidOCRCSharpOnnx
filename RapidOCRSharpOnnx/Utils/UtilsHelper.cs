@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Channels;
 
 namespace RapidOCRSharpOnnx.Utils
 {
@@ -69,7 +70,18 @@ namespace RapidOCRSharpOnnx.Utils
         }
 
 
+        public static BoundedChannelOptions GetChannelOptions(int batchPoolSize)
+        {
+            var channelOptions = new BoundedChannelOptions(batchPoolSize)
+            {
+                SingleWriter = false,
+                SingleReader = true,
+                AllowSynchronousContinuations = false,
+                FullMode = BoundedChannelFullMode.Wait
+            };
 
+            return channelOptions;
+        }
 
 
         public static SKBitmap MatToSKBitmapFast(Mat mat)

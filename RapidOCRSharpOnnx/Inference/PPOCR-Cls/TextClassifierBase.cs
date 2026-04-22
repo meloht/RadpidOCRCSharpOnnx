@@ -1,6 +1,8 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 using RapidOCRSharpOnnx.Configurations;
+using RapidOCRSharpOnnx.Inference.PPOCR_Cls.Models;
+using RapidOCRSharpOnnx.Inference.PPOCR_Det.Models;
 using RapidOCRSharpOnnx.Models;
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
@@ -8,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading.Channels;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 {
@@ -16,9 +19,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 
         protected IClsPreprocess _clsPreprocess;
         protected IClsPostprocess _clsPostprocess;
-
-        private static readonly int[] ClsImageShapev4 = [3, 48, 192];
-        private static readonly int[] ClsImageShapev5 = [3, 80, 160];
 
         protected readonly int[] _clsImageShape;
 
@@ -29,15 +29,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             _clsPostprocess = postprocess;
             _ocrConfig = ocrConfig;
 
+            _clsImageShape = preprocess.GetClsImageShape();
 
-            if (_ocrConfig.ClassifierConfig.OCRVersion == OCRVersion.PPOCRV5)
-            {
-                _clsImageShape = ClsImageShapev5;
-            }
-            else
-            {
-                _clsImageShape = ClsImageShapev4;
-            }
         }
 
 
@@ -75,7 +68,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 idx = 0;
                 for (int j = i; j < endNo; j++)
                 {
-                    idx = _clsPreprocess.ResizeNormImg(imgList[indices[j]], idx, batchData, _clsImageShape);
+                    idx = _clsPreprocess.ResizeNormImg(imgList[indices[j]], idx, batchData);
                 }
 
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_w });
@@ -99,6 +92,54 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             resultPerf.Data = cls_res;
             resultPerf.Perf = perf;
             return resultPerf;
+        }
+
+
+        public async Task BatchClsAsync(OcrBatchResult batchResult, Channel<OcrBatchResult> channelClsPre, ChannelWriter<OcrBatchResult> nextChannelWriter)
+        {
+            int idx = 0;
+            int count = batchResult.DetResult.ImgCropList.Count;
+            int img_c = _clsImageShape[0];
+            int img_h = _clsImageShape[1];
+            int img_w = _clsImageShape[2];
+
+            batchResult.ClsResult = new ClsResult[count];
+            Task[] tasks = new Task[count + 2];
+
+            Channel<ClsPreResultBatch> channelPre = Channel.CreateBounded<ClsPreResultBatch>(GetChannelOptions(_ocrConfig.BatchPoolSize));
+            var producer = _clsPreprocess.PreprocessBatchAsync(batchResult.DetResult.ImgCropList, _deviceType, batchResult, channelPre.Writer);
+
+            tasks[idx] = producer;
+            Interlocked.Increment(ref idx);
+            var consumer = Task.Run(async () =>
+            {
+                await foreach (ClsPreResultBatch item in channelPre.Reader.ReadAllAsync())
+                {
+                    using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.InputData, new long[] { 1, img_c, img_h, img_w });
+
+                    var output0 = InferenceRun(inputOrtValue, null);
+                    var task = BatchPostProcessAsync(output0, item.BatchResult, item.img, idx - 1, nextChannelWriter);
+                    Interlocked.Increment(ref idx);
+
+                }
+            });
+            tasks[idx] = consumer;
+            await Task.WhenAll(tasks);
+
+            nextChannelWriter.Complete();
+        }
+
+        private async Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, OcrBatchResult item, Mat img, int index, ChannelWriter<OcrBatchResult> writer)
+        {
+            await Task.Run(async () =>
+            {
+                using (output)
+                {
+                    using var ortValue = output[0];
+                    item.ClsResult[index] = _clsPostprocess.ClsPostProcess(ortValue, img);
+                    await writer.WriteAsync(item);
+                }
+            });
         }
 
     }

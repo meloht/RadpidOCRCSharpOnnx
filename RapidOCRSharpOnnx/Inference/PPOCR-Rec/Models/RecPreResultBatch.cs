@@ -1,0 +1,11 @@
+﻿using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec.Models
+{
+    public record RecPreResultBatch(OcrBatchResult BatchResult, float[] InputData, float MaxWhRatio, float WhRatio);
+}

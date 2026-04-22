@@ -44,17 +44,17 @@ namespace RapidOCRSharpOnnx
         {
             OcrResult result = new OcrResult();
             var detResult = _ocrDetector.TextDetect(image);
-            result.DetResults = detResult;
+            result.DetResult = detResult;
             using (detResult.Data.ImgCropList)
             {
                 if (_ocrClassifier != null)
                 {
                     var ClsResult = _ocrClassifier.TextClassify(detResult.Data.ImgCropList);
-                    result.ClsResults = ClsResult;
+                    result.ClsResult = ClsResult;
                 }
 
                 var recResults = _ocrRecognizer.TextRecognize(detResult.Data.ImgCropList);
-                result.RecResults = recResults;
+                result.RecResult = recResults;
 
                 for (int i = 0; i < detResult.Data.DetItems.Length; i++)
                 {

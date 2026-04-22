@@ -15,6 +15,8 @@ namespace RapidOCRSharpOnnx.Models
             Label = label;
             Score = score;
         }
+        public ClsResult()
+        { }
         public override string ToString()
         {
             return $"Label: {Label}, Score: {Score}";

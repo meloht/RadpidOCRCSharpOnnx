@@ -47,6 +47,38 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 
         }
 
+        public RecResult RecPostProcess(OrtValue ortValue, float wh_ratio, float max_wh_ratio, string[] charList)
+        {
+            var shapeInfo = ortValue.GetTensorTypeAndShape();
+            int batchSize = (int)shapeInfo.Shape[0];
+            int tNum = (int)shapeInfo.Shape[1];
+            int numClasses = (int)shapeInfo.Shape[2];
+           
+            var data = ortValue.GetTensorDataAsSpan<float>();
+
+            if (batchSize != 1)
+                throw new InvalidOperationException("Rec Data length mismatch.");
+
+            var maxIndexAndValue = GetMaxIndexAndValue(data, batchSize, tNum, numClasses);
+            int[] ignored_tokens = getIgnoredTokens();
+
+  
+            int[] token_indices = maxIndexAndValue.Indices[0];
+            bool[] selection = GetSelection(token_indices, ignored_tokens);
+
+            var confList = GetConfList(maxIndexAndValue.Values, 0, selection);
+
+            string text = GetCharList(token_indices, selection, charList);
+            float avgConf = (float)Math.Round(confList.Average(), 5);
+
+            RecResult result = new RecResult(text, avgConf);
+            result.LineTxtLen = token_indices.Length * wh_ratio / max_wh_ratio;
+            result.ValidCols = GetValidCols(selection);
+            result.ConfList = confList;
+            return result;
+
+        }
+
         private ValueTuplePairArray GetMaxIndexAndValue(ReadOnlySpan<float> data, int batchSize, int tNum, int numClasses)
         {
             float[][] maxValues = new float[batchSize][];
