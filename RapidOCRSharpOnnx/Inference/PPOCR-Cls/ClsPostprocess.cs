@@ -58,7 +58,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             int numClasses = (int)shapeInfo.Shape[1];
 
             var data = ortValue.GetTensorDataAsSpan<float>();
-            if (batchSize != 1)
+            if (data.Length != batchSize * numClasses)
                 throw new InvalidOperationException("Cls Data length mismatch.");
 
             int idx = 0;
