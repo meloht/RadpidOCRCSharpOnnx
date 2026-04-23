@@ -1,22 +1,50 @@
 ﻿using OpenCvSharp;
+using RapidOCRSharpOnnx.Configurations;
+using RapidOCRSharpOnnx.Inference.PPOCR_Cls.Models;
+using RapidOCRSharpOnnx.Inference.PPOCR_Det.Models;
+using RapidOCRSharpOnnx.Providers;
+using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Channels;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 {
-    public class ClsPreprocess: IClsPreprocess
+    public class ClsPreprocess : PreprocessBatchCore<Mat, OcrBatchResult, ClsPreResultBatch>, IClsPreprocess
     {
+        private static readonly int[] ClsImageShapev4 = [3, 48, 192];
+        private static readonly int[] ClsImageShapev5 = [3, 80, 160];
 
-        public int ResizeNormImg(Mat img, int idx, float[] inputData, int[] clsImageShape)
+        private OcrConfig _ocrConfig;
+        protected readonly int[] _clsImageShape;
+        public ClsPreprocess(OcrConfig ocrConfig)
+        {
+            _ocrConfig = ocrConfig;
+            if (_ocrConfig.ClassifierConfig.OCRVersion == OCRVersion.PPOCRV5)
+            {
+                _clsImageShape = ClsImageShapev5;
+            }
+            else
+            {
+                _clsImageShape = ClsImageShapev4;
+            }
+        }
+
+        public int[] GetClsImageShape()
+        {
+            return _clsImageShape;
+        }
+
+        public int ResizeNormImg(Mat img, int idx, float[] inputData)
         {
             // 获取原图尺寸和通道数
             int h = img.Height;
             int w = img.Width;
             int channels = img.Channels();
-            int img_c = clsImageShape[0];
-            int img_h = clsImageShape[1];
-            int img_w = clsImageShape[2];
+            int img_c = _clsImageShape[0];
+            int img_h = _clsImageShape[1];
+            int img_w = _clsImageShape[2];
 
             if (img_c != channels)
                 throw new ArgumentException($"The count of image channels does not match：expect {img_c}，actual {channels}");
@@ -52,5 +80,21 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             }
             return idx;
         }
+
+        public async Task PreprocessBatchAsync(DisposableList<Mat> ImgCropList, DeviceType deviceType, OcrBatchResult batchResult, ChannelWriter<ClsPreResultBatch> writer)
+        {
+            await PreprocessBatchBaseAsync(ImgCropList, deviceType, writer, batchResult, PreprocessChannel);
+        }
+        protected ClsPreResultBatch PreprocessChannel(Mat img, OcrBatchResult batchResult)
+        {
+            int img_c = _clsImageShape[0];
+            int img_h = _clsImageShape[1];
+            int img_w = _clsImageShape[2];
+            float[] inputData = new float[img_c * img_h * img_w];
+            ResizeNormImg(img, 0, inputData);
+            return new ClsPreResultBatch(batchResult, inputData, img);
+        }
+
+
     }
 }

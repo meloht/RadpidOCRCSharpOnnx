@@ -53,7 +53,7 @@ namespace RapidOCRSharpOnnx.Providers
             var options = BuildSessionOptions();
             InferenceSession session = new InferenceSession(OcrConfig.ClassifierConfig.ModelPath, options);
             var postprocess = new ClsPostprocess(OcrConfig.ClassifierConfig);
-            var preprocess = new ClsPreprocess();
+            var preprocess = new ClsPreprocess(OcrConfig);
 
             return CreateOcrClassifier(session, options, postprocess, preprocess);
         }

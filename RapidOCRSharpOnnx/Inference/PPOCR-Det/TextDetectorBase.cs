@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Channels;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
+
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
     public abstract class TextDetectorBase : OnnxInferenceCore
@@ -17,6 +18,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
         protected IDetPreprocess _detPreprocess;
         protected IDetPostprocess _detPostprocess;
+
 
         public TextDetectorBase(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess, OcrConfig ocrConfig, DeviceType deviceType)
             : base(session, options, ocrConfig, deviceType)
@@ -39,16 +41,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             using var output0 = InferenceRun(inputOrtValue, perf);
             using var ortValue = output0[0];
 
-            return PostProcess(resizedImg, ortValue, perf, data);
-        }
-
-        private ResultPerf<DetResult> PostProcess(Mat resizedImg,OrtValue ortValue, PerfModel perf, DetPreprocessData data)
-        {
             _stopwatch.Restart();
             var res = _detPostprocess.PostProcess(resizedImg, ortValue);
-          
+
             res.ResizeData = data.ResizeData;
-  
+
             ResultPerf<DetResult> result = new ResultPerf<DetResult>();
             result.Data = res;
             result.Perf = perf;
@@ -59,42 +56,46 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         }
 
 
-
-        protected async Task BatchDetectBaseAsync(List<string> listImg)
+        public async Task BatchDetectAsync(List<string> listImg, ChannelWriter<OcrBatchResult> nextChannelWriter, OcrBatchResult[] batchResults)
         {
-       
+            int idx = 0;
+            Task[] tasks = new Task[listImg.Count + 2];
             Channel<DetPreResultBatch> channelDet = Channel.CreateBounded<DetPreResultBatch>(GetChannelOptions(_ocrConfig.BatchPoolSize));
-            //Channel<DetPreResultBatch> channelDet = Channel.CreateBounded<DetPreResultBatch>(GetChannelOptions(_ocrConfig.BatchPoolSize));
-
             var producer = _detPreprocess.PreprocessBatchAsync(listImg, _deviceType, channelDet.Writer);
+
+            tasks[idx] = producer;
+            Interlocked.Increment(ref idx);
 
             var consumer = Task.Run(async () =>
             {
                 await foreach (DetPreResultBatch item in channelDet.Reader.ReadAllAsync())
                 {
-                    long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
                     using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.PreResult.Data, item.PreResult.Dimensions);
 
                     var output0 = InferenceRun(inputOrtValue, null);
-
-                    _ = BatchPostProcessAsync(output0, item);
+                    tasks[idx] = BatchPostProcessAsync(output0, item, batchResults[idx - 1], nextChannelWriter);
+                    Interlocked.Increment(ref idx);
 
                 }
             });
-            await Task.WhenAll(producer, consumer);
+            tasks[idx] = consumer;
+            await Task.WhenAll(tasks);
 
+            nextChannelWriter.Complete();
         }
 
-        private async Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, DetPreResultBatch item)
+        private async Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, DetPreResultBatch item, OcrBatchResult batchResult, ChannelWriter<OcrBatchResult> writer)
         {
             await Task.Run(async () =>
             {
                 using (output)
-                using (item.resizedImg)
+                using (item.ResizedImg)
                 {
                     using var ortValue = output[0];
-                    var res = PostProcess(item.resizedImg,ortValue,new PerfModel(), item.PreResult);
+                    var res = _detPostprocess.PostProcess(item.ResizedImg, ortValue);
+                    res.ResizeData = item.PreResult.ResizeData;
+                    batchResult.DetResult = res;
+                    await writer.WriteAsync(batchResult);
                 }
             });
         }

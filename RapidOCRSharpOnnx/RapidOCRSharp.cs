@@ -14,10 +14,8 @@ namespace RapidOCRSharpOnnx
     public class RapidOCRSharp : IDisposable
     {
         private IExecutionProvider _executionProvider;
-        private IOcrDetector _ocrDetector;
-        private IOcrClassifier _ocrClassifier;
-        private IOcrRecognizer _ocrRecognizer;
-        private OcrDrawerSkia _ocrDrawerSkia;
+        private IExecutePipeline _executePipeline;
+
 
         public OcrConfig Configuration
         {
@@ -28,55 +26,21 @@ namespace RapidOCRSharpOnnx
         public RapidOCRSharp(IExecutionProvider executionProvider)
         {
             _executionProvider = executionProvider;
-            _ocrDetector = _executionProvider.CreateDetector();
-            _ocrClassifier = _executionProvider.CreateClassifier();
-            _ocrRecognizer = _executionProvider.CreateRecognizer();
-            _ocrDrawerSkia = new OcrDrawerSkia(Configuration);
+            _executePipeline = new ExecutePipeline(Configuration, executionProvider);
         }
 
         public OcrResult RecognizeText(string imagePath, string savePath = null)
         {
-            ValidationUtils.ValidateImage(imagePath);
-            using Mat image = Cv2.ImRead(imagePath);
-            return RecognizeText(image, savePath);
+            return _executePipeline.RecognizeText(imagePath, savePath);
         }
         public OcrResult RecognizeText(Mat image, string savePath = null)
         {
-            OcrResult result = new OcrResult();
-            var detResult = _ocrDetector.TextDetect(image);
-            result.DetResults = detResult;
-            using (detResult.Data.ImgCropList)
-            {
-                if (_ocrClassifier != null)
-                {
-                    var ClsResult = _ocrClassifier.TextClassify(detResult.Data.ImgCropList);
-                    result.ClsResults = ClsResult;
-                }
-
-                var recResults = _ocrRecognizer.TextRecognize(detResult.Data.ImgCropList);
-                result.RecResults = recResults;
-
-                for (int i = 0; i < detResult.Data.DetItems.Length; i++)
-                {
-                    detResult.Data.DetItems[i].Word = recResults.Data[i].Label;
-                }
-                result.TextBlocks = string.Join(" ", recResults.Data.Select(r => r.Label));
-
-                if (!string.IsNullOrEmpty(savePath))
-                {
-                    _ocrDrawerSkia.DrawTextBlock(image, savePath, detResult.Data, recResults.Data);
-                }
-            }
-
-            return result;
+            return _executePipeline.RecognizeText(image, savePath);
         }
 
         public void Dispose()
         {
-            _ocrDetector?.Dispose();
-            _ocrClassifier?.Dispose();
-            _ocrRecognizer?.Dispose();
-            _ocrDrawerSkia?.Dispose();
+            _executePipeline.Dispose();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenCvSharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,10 @@ namespace RapidOCRSharpOnnx
 {
     public interface IExecutePipeline : IDisposable
     {
+        OcrResult RecognizeText(string imagePath, string savePath = null);
+        OcrResult RecognizeText(Mat image, string savePath = null);
 
+        IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList);
+        Task<OcrBatchResult[]> BatchAsync(List<string> imageList);
     }
 }

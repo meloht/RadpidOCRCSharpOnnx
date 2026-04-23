@@ -10,15 +10,15 @@ namespace RapidOCRSharpOnnx
     {
         public string TextBlocks { get; set; }
 
-        public ResultPerf<DetResult> DetResults { get; set; }
+        public ResultPerf<DetResult> DetResult { get; set; }
 
-        public ResultPerf<ClsResult[]> ClsResults { get; set; }
+        public ResultPerf<ClsResult[]> ClsResult { get; set; }
 
-        public ResultPerf<RecResult[]> RecResults { get; set; }
+        public ResultPerf<RecResult[]> RecResult { get; set; }
 
         public override string ToString()
         {
-            return $"TextBlocks: {TextBlocks} DetPerf: {DetResults.Perf}, ClsPerf: {ClsResults.Perf}, RecPerf: {RecResults.Perf}";
+            return $"TextBlocks: {TextBlocks} DetPerf: {DetResult.Perf}, ClsPerf: {ClsResult.Perf}, RecPerf: {RecResult.Perf}";
         }
 
     }

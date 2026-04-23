@@ -83,6 +83,10 @@ namespace RapidOCRSharpOnnx.Inference
             return channelOptions;
         }
 
+
+       
+
+
         public void DisposeBase()
         {
             _session?.Dispose();

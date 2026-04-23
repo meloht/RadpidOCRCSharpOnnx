@@ -10,7 +10,7 @@ using System.Threading.Channels;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
-    public class DetPreprocess : IDetPreprocess
+    public class DetPreprocess : PreprocessBatchCore<string, object, DetPreResultBatch>, IDetPreprocess
     {
         private OcrConfig _ocrConfig;
         private Scalar _paddingColor;
@@ -32,57 +32,16 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
         public async Task PreprocessBatchAsync(List<string> listImg, DeviceType deviceType, ChannelWriter<DetPreResultBatch> writer)
         {
-            var arr = GetPreprocessWorkersSize(listImg, deviceType);
-            Task[] tasks = new Task[arr.Count()];
-            int idx = 0;
-            foreach (string[] subList in arr)
-            {
-                tasks[idx++] = RunPreprocessSplitAsync(subList, writer);
-            }
-            await Task.WhenAll(tasks);
-
-            writer.Complete();
+            await PreprocessBatchBaseAsync(listImg, deviceType, writer, null, PreprocessChannel);
         }
-        private async Task RunPreprocessSplitAsync(IEnumerable<string> list, ChannelWriter<DetPreResultBatch> writer)
+        protected DetPreResultBatch PreprocessChannel(string imgPath,object obj)
         {
-            await Task.Run(async () =>
-            {
-                foreach (string imgPath in list)
-                {
-                    using Mat img = Cv2.ImRead(imgPath);
-                    Mat resizedImg = img.Clone();
-                    var res = Preprocess(img, resizedImg);
-                    await writer.WriteAsync(new DetPreResultBatch(res, resizedImg, imgPath));
-                }
-
-            });
+            using Mat img = Cv2.ImRead(imgPath);
+            Mat resizedImg = img.Clone();
+            var res = Preprocess(img, resizedImg);
+            return new DetPreResultBatch(res, resizedImg, imgPath);
         }
-        private IEnumerable<string[]> GetPreprocessWorkersSize(List<string> listImg, DeviceType deviceType)
-        {
-            int preprocessWorkers = Environment.ProcessorCount;
-            if (deviceType == DeviceType.CPU)
-            {
-                preprocessWorkers = 2;
-            }
-            else
-            {
-                if (listImg.Count < Environment.ProcessorCount)
-                {
-                    preprocessWorkers = Environment.ProcessorCount / 2;
-                }
-                if (listImg.Count < preprocessWorkers)
-                {
-                    preprocessWorkers = 2;
-                }
-            }
-            int size = listImg.Count / preprocessWorkers;
 
-            if (size < 1)
-            {
-                size = listImg.Count;
-            }
-            return listImg.Chunk(size);
-        }
 
         private DetPreprocessData PreprocessImage(Mat image)
         {

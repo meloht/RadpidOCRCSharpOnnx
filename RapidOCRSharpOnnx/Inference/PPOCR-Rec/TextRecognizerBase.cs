@@ -1,6 +1,9 @@
 ﻿using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 using RapidOCRSharpOnnx.Configurations;
+using RapidOCRSharpOnnx.Inference.PPOCR_Cls.Models;
+using RapidOCRSharpOnnx.Inference.PPOCR_Det;
+using RapidOCRSharpOnnx.Inference.PPOCR_Rec.Models;
 using RapidOCRSharpOnnx.Models;
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
@@ -8,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading.Channels;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 {
@@ -17,7 +21,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
         protected IRecPreprocess _recPreprocess;
         protected IRecPostprocess _recPostprocess;
         protected readonly string[] _charList;
-     
+
 
         public TextRecognizerBase(InferenceSession session, SessionOptions options, IRecPostprocess postprocess, IRecPreprocess preprocess, OcrConfig ocrConfig, DeviceType deviceType)
             : base(session, options, ocrConfig, deviceType)
@@ -119,6 +123,57 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             resultPerf.Data = rec_res;
             resultPerf.Perf = perf;
             return resultPerf;
+        }
+
+
+        public async Task BatchRecAsync(OcrBatchResult batchResult)
+        {
+            int idx = 0;
+            int count = batchResult.DetResult.ImgCropList.Count;
+            int img_c = _ocrConfig.RecognizerConfig.RecImgShape[0];
+            int img_h = _ocrConfig.RecognizerConfig.RecImgShape[1];
+            int img_w = _ocrConfig.RecognizerConfig.RecImgShape[2];
+
+            batchResult.ClsResult = new ClsResult[count];
+
+            Task[] tasks = new Task[count + 2];
+
+            Channel<RecPreResultBatch> channelPre = Channel.CreateBounded<RecPreResultBatch>(GetChannelOptions(_ocrConfig.BatchPoolSize));
+            var producer = _recPreprocess.PreprocessBatchAsync(batchResult.DetResult.ImgCropList, _deviceType, batchResult, channelPre.Writer);
+
+            tasks[idx] = producer;
+            Interlocked.Increment(ref idx);
+            var consumer = Task.Run(async () =>
+            {
+                await foreach (RecPreResultBatch item in channelPre.Reader.ReadAllAsync())
+                {
+                    using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.InputData, new long[] { 1, img_c, img_h, img_w });
+
+                    var output0 = InferenceRun(inputOrtValue, null);
+                    var task = BatchPostProcessAsync(output0, item.BatchResult, item.WhRatio, item.MaxWhRatio, idx - 1);
+                    Interlocked.Increment(ref idx);
+                }
+            });
+            tasks[idx] = consumer;
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < batchResult.DetResult.DetItems.Length; i++)
+            {
+                batchResult.DetResult.DetItems[i].Word = batchResult.RecResult[i].Label;
+            }
+            batchResult.TextBlocks = string.Join(" ", batchResult.RecResult.Select(r => r.Label));
+        }
+
+        private async Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, OcrBatchResult item, float wh_ratio, float max_wh_ratio, int index)
+        {
+            await Task.Run(async () =>
+            {
+                using (output)
+                {
+                    using var ortValue = output[0];
+                    item.RecResult[index] = _recPostprocess.RecPostProcess(ortValue, wh_ratio, max_wh_ratio, _charList);
+                }
+            });
         }
 
     }

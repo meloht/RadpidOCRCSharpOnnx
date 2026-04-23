@@ -16,7 +16,42 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
         {
             _classifierConfig = clsConfig;
         }
-        public void ClsPostProcess(OrtValue ortValue,int ij, DisposableList<Mat> imgList, ClsResult[] cls_res)
+
+        public ClsResult ClsPostProcess(OrtValue ortValue, Mat img)
+        {
+            var shapeInfo = ortValue.GetTensorTypeAndShape();
+    
+            int numClasses = (int)shapeInfo.Shape[1];
+           
+            var data = ortValue.GetTensorDataAsSpan<float>();
+            if (data.Length != numClasses)
+                throw new InvalidOperationException("Data length mismatch.");
+
+            int maxIdx = 0;
+            float maxVal = float.MinValue;
+
+            for (int j = 0; j < numClasses; j++)
+            {
+                float val = data[j];
+                if (val > maxVal)
+                {
+                    maxVal = val;
+                    maxIdx = j;
+                }
+            }
+
+            string label = _classifierConfig.LabelList[maxIdx];
+            float score = maxVal;
+            
+         
+            if (label == "180" && score > _classifierConfig.ClsThresh)
+            {
+                Cv2.Rotate(img, img, RotateFlags.Rotate180);
+            }
+            return new ClsResult(label, score);
+        }
+       
+        public void ClsPostProcess(OrtValue ortValue,int currentIndex, DisposableList<Mat> imgList, ClsResult[] cls_res)
         {
             var shapeInfo = ortValue.GetTensorTypeAndShape();
             int batchSize = (int)shapeInfo.Shape[0];
@@ -24,7 +59,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 
             var data = ortValue.GetTensorDataAsSpan<float>();
             if (data.Length != batchSize * numClasses)
-                throw new InvalidOperationException("Data length mismatch.");
+                throw new InvalidOperationException("Cls Data length mismatch.");
 
             int idx = 0;
             int maxIdx = 0;
@@ -46,7 +81,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
      
                 string label = _classifierConfig.LabelList[maxIdx];
                 float score = maxVal;
-                int index= ij + i;
+                int index= currentIndex + i;
                 cls_res[index].Label = label;
                 cls_res[index].Score = score;
                 if (label == "180" && score > _classifierConfig.ClsThresh)
