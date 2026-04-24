@@ -78,8 +78,8 @@ namespace RapidOCRSharpOnnx.Utils
                 int imgW = img.Cols;    // 图像宽度
 
                 // 2. 计算原始图像尺寸
-                int oriImgH = (int)Math.Round(imgH * ratioH);
-                int oriImgW = (int)Math.Round(imgW * ratioW);
+                int oriImgH = (int)Math.Round(imgH * ratioH, 0);
+                int oriImgW = (int)Math.Round(imgW * ratioW, 0);
 
                 // 3. 缩放回原始尺寸
                 Mat resizeImg = new Mat();
@@ -144,7 +144,7 @@ namespace RapidOCRSharpOnnx.Utils
                 {
                     Color = color,
                     Style = SKPaintStyle.Stroke,
-                    StrokeWidth = 2,
+                    StrokeWidth = 1.0f,
                     IsAntialias = true
                 })
                 {

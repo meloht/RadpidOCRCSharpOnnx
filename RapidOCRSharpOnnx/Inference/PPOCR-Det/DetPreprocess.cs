@@ -10,7 +10,7 @@ using System.Threading.Channels;
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
-    public class DetPreprocess : PreprocessBatchCore<string, object, DetPreResultBatch>, IDetPreprocess
+    public class DetPreprocess : PreprocessBatchCore<ImagePathIndex, object, DetPreResultBatch>, IDetPreprocess
     {
         private OcrConfig _ocrConfig;
         private Scalar _paddingColor;
@@ -30,16 +30,16 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             return data;
         }
 
-        public void PreprocessBatchAsync(List<string> listImg, DeviceType deviceType, ChannelWriter<DetPreResultBatch> writer)
+        public void PreprocessBatchAsync(List<ImagePathIndex> listImg, DeviceType deviceType, ChannelWriter<DetPreResultBatch> writer)
         {
             PreprocessBatchBaseAsync(listImg, deviceType, writer, null, PreprocessChannel);
         }
-        protected DetPreResultBatch PreprocessChannel(string imgPath, object obj)
+        protected DetPreResultBatch PreprocessChannel(ImagePathIndex imagePath, object obj)
         {
-            using Mat img = Cv2.ImRead(imgPath);
+            using Mat img = Cv2.ImRead(imagePath.ImagePath);
             Mat resizedImg = img.Clone();
             var res = Preprocess(img, resizedImg);
-            return new DetPreResultBatch(res, resizedImg, imgPath);
+            return new DetPreResultBatch(res, resizedImg, imagePath);
         }
 
 

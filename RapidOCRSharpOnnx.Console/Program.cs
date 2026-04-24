@@ -12,8 +12,8 @@ namespace RapidOCRSharpOnnx.ConsoleApp
         static void Main(string[] args)
         {
             var buildNumber = Environment.OSVersion.Version.Build;
-            TestBatch();
-            //TestImage();
+            //TestBatch();
+            TestImage();
         }
 
         private static void TestImage()
