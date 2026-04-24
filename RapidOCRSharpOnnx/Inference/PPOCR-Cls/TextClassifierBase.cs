@@ -4,6 +4,7 @@ using OpenCvSharp.Flann;
 using RapidOCRSharpOnnx.Configurations;
 using RapidOCRSharpOnnx.Inference.PPOCR_Cls.Models;
 using RapidOCRSharpOnnx.Inference.PPOCR_Det.Models;
+using RapidOCRSharpOnnx.Inference.PPOCR_Rec.Models;
 using RapidOCRSharpOnnx.Models;
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
@@ -35,7 +36,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
         }
 
 
-        public ResultPerf<ClsResult[]> TextClassify(DisposableList<Mat> imgList)
+        public ResultPerf<ClsResult[]> TextClassify(DisposableList<ImageIndex> imgList)
         {
             PerfModel perf = new PerfModel();
 
@@ -44,7 +45,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             for (int i = 0; i < indices.Length; i++)
             {
                 indices[i] = i;
-                widthList[i] = (float)imgList[i].Width / (float)imgList[i].Height;
+                widthList[i] = (float)imgList[i].Image.Width / (float)imgList[i].Image.Height;
             }
 
             Array.Sort(indices, (a, b) => widthList[a].CompareTo(widthList[b]));
@@ -69,7 +70,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 idx = 0;
                 for (int j = i; j < endNo; j++)
                 {
-                    idx = _clsPreprocess.ResizeNormImg(imgList[indices[j]], idx, batchData);
+                    idx = _clsPreprocess.ResizeNormImg(imgList[indices[j]].Image, idx, batchData);
                 }
 
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_w });
@@ -105,13 +106,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             var consumer = WriteRecAsync(batchResult, channelPre, recChannelWriter);
 
             Task.WaitAll(producer, consumer);
-            recChannelWriter.Complete();
-            Console.WriteLine($"{DateTime.Now} recChannelWriter.Complete()");
+           
 
         }
         private async Task WriteRecAsync(OcrBatchResult batchResult, Channel<ClsPreResultBatch> channelPre, ChannelWriter<OcrBatchResult> recChannelWriter)
         {
-            int idx = 0;
             int count = batchResult.DetResult.ImgCropList.Count;
             int img_c = _clsImageShape[0];
             int img_h = _clsImageShape[1];
@@ -122,16 +121,16 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             await foreach (ClsPreResultBatch item in channelPre.Reader.ReadAllAsync())
             {
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.InputData, new long[] { 1, img_c, img_h, img_w });
-                Console.WriteLine($"{DateTime.Now} Cls batch {idx}");
+                Console.WriteLine($"{DateTime.Now} Cls batch {item.ImageIndex.Index}");
                 var output0 = InferenceRun(inputOrtValue, null);
                 //await BatchPostProcessAsync(output0, item.BatchResult, item.img, idx, recChannelWriter);
 
                 using var ortValue = output0[0];
-                item.BatchResult.ClsResult[idx] = _clsPostprocess.ClsPostProcess(ortValue, item.img);
-                Console.WriteLine($"{DateTime.Now} Cls batch Write {idx}");
+                item.BatchResult.ClsResult[item.ImageIndex.Index] = _clsPostprocess.ClsPostProcess(ortValue, item.ImageIndex.Image);
+                Console.WriteLine($"{DateTime.Now} Cls batch Write {item.ImageIndex.Index}");
                 await recChannelWriter.WriteAsync(item.BatchResult);
 
-                Interlocked.Increment(ref idx);
+
 
             }
 

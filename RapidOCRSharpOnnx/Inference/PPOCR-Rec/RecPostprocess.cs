@@ -59,14 +59,15 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             if (batchSize != 1)
                 throw new InvalidOperationException("Rec Data length mismatch.");
 
+            int batchIdx = 0;
             var maxIndexAndValue = GetMaxIndexAndValue(data, batchSize, tNum, numClasses);
             int[] ignored_tokens = getIgnoredTokens();
 
   
-            int[] token_indices = maxIndexAndValue.Indices[0];
+            int[] token_indices = maxIndexAndValue.Indices[batchIdx];
             bool[] selection = GetSelection(token_indices, ignored_tokens);
 
-            var confList = GetConfList(maxIndexAndValue.Values, 0, selection);
+            var confList = GetConfList(maxIndexAndValue.Values, batchIdx, selection);
 
             string text = GetCharList(token_indices, selection, charList);
             float avgConf = (float)Math.Round(confList.Average(), 5);

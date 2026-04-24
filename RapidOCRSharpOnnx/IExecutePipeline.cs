@@ -13,6 +13,6 @@ namespace RapidOCRSharpOnnx
         OcrResult RecognizeText(Mat image, string savePath = null);
 
        // IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList);
-        OcrBatchResult[] BatchAsync(List<string> imageList);
+        OcrBatchResult[] BatchAsync(List<string> imageList, string saveDir = null);
     }
 }

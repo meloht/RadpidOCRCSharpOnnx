@@ -11,17 +11,15 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Channels;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+
 
 
 namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 {
     public abstract class TextDetectorBase : OnnxInferenceCore
     {
-
         protected IDetPreprocess _detPreprocess;
         protected IDetPostprocess _detPostprocess;
-
 
         public TextDetectorBase(InferenceSession session, SessionOptions options, IDetPostprocess postprocess, IDetPreprocess preprocess, OcrConfig ocrConfig, DeviceType deviceType)
             : base(session, options, ocrConfig, deviceType)
@@ -82,7 +80,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.PreResult.Data, item.PreResult.Dimensions);
                 Console.WriteLine($"Detect batch {idx}");
                 var output0 = InferenceRun(inputOrtValue, null);
-                batchResults[idx] = new OcrBatchResult();
+              
                 // await BatchPostProcessAsync(output0, item, batchResults[idx], idx, nextChannelWriter);
 
                 using (output0)

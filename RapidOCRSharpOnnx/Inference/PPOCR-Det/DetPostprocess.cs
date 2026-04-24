@@ -3,6 +3,7 @@ using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
 using RapidOCRSharpOnnx.Configurations;
 using RapidOCRSharpOnnx.Inference.PPOCR_Det.Models;
+using RapidOCRSharpOnnx.Inference.PPOCR_Rec.Models;
 using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Collections.Generic;
@@ -25,13 +26,14 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             var res = DBPostProcess(output, image.Height, image.Width);
 
             SortedBoxes(res.DetItems);
-            var imgCropList = new DisposableList<Mat>();
+            var imgCropList = new DisposableList<ImageIndex>();
 
-            foreach (var item in res.DetItems)
+            for (int i = 0; i < res.DetItems.Length; i++)
             {
-                var imgCrop = GetRotateCropImage(image, item.Box);
-                imgCropList.Add(imgCrop);
+                var imgCrop = GetRotateCropImage(image, res.DetItems[i].Box);
+                imgCropList.Add(new ImageIndex(imgCrop, i));
             }
+
             res.ImgCropList = imgCropList;
             return res;
         }
@@ -85,17 +87,17 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             {
                 float dy = dtBoxes[i].Box[0].Y - dtBoxes[i - 1].Box[0].Y;
                 dtBoxes[i].LineId = dtBoxes[i - 1].LineId + (dy >= _BOX_SORT_Y_THRESHOLD ? 1 : 0);
-       
+
             }
             // 3. 按行 ID 升序，同一行内按 X 坐标升序排序
-            Array.Sort(dtBoxes, (a, b) => 
+            Array.Sort(dtBoxes, (a, b) =>
             {
                 int lineCompare = a.LineId.CompareTo(b.LineId);
                 if (lineCompare != 0)
                     return lineCompare;
                 return a.Box[0].X.CompareTo(b.Box[0].X);
             });
-           
+
         }
 
         private Mat GetRotateCropImage(Mat img, Point2f[] points)

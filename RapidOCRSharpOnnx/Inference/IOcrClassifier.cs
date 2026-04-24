@@ -1,4 +1,5 @@
 ﻿using OpenCvSharp;
+using RapidOCRSharpOnnx.Inference.PPOCR_Rec.Models;
 using RapidOCRSharpOnnx.Models;
 using RapidOCRSharpOnnx.Utils;
 using System;
@@ -10,7 +11,7 @@ namespace RapidOCRSharpOnnx.Inference
 {
     public interface IOcrClassifier : IDisposable
     {
-        ResultPerf<ClsResult[]> TextClassify(DisposableList<Mat> imgList);
+        ResultPerf<ClsResult[]> TextClassify(DisposableList<ImageIndex> imgList);
 
         void BatchClsAsync(OcrBatchResult batchResult, ChannelWriter<OcrBatchResult> nextChannelWriter);
     }

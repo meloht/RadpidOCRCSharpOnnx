@@ -1,6 +1,7 @@
 ﻿using RapidOCRSharpOnnx.Providers;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Channels;
@@ -10,13 +11,14 @@ namespace RapidOCRSharpOnnx.Inference
 {
     public class PreprocessBatchCore<T1, T2, TResult>
     {
-        protected void PreprocessBatchBaseAsync(List<T1> listImg, DeviceType deviceType, ChannelWriter<TResult> writer, T2 t2, Func<T1, T2, TResult> preprocess)
+        protected void PreprocessBatchBaseAsync(IList<T1> listImg, DeviceType deviceType, ChannelWriter<TResult> writer, T2 t2, Func<T1, T2, TResult> preprocess)
         {
             if (listImg == null || listImg.Count == 0)
             {
                 writer.Complete();
                 return;
             }
+            
             var arr = GetPreprocessWorkersSize(listImg, deviceType);
             Task[] tasks = new Task[arr.Count()];
             int idx = 0;
@@ -29,7 +31,7 @@ namespace RapidOCRSharpOnnx.Inference
 
             writer.Complete();
         }
-        private Task RunPreprocessSplitAsync(IEnumerable<T1> list, ChannelWriter<TResult> writer, Func<T1, T2, TResult> preprocess, T2 t2)
+        private Task RunPreprocessSplitAsync(IList<T1> list, ChannelWriter<TResult> writer, Func<T1, T2, TResult> preprocess, T2 t2)
         {
             return Task.Run(async () =>
             {
@@ -41,7 +43,7 @@ namespace RapidOCRSharpOnnx.Inference
 
             });
         }
-        private IEnumerable<T1[]> GetPreprocessWorkersSize(List<T1> listImg, DeviceType deviceType)
+        private IEnumerable<T1[]> GetPreprocessWorkersSize(IList<T1> listImg, DeviceType deviceType)
         {
             int preprocessWorkers = Environment.ProcessorCount;
             if (deviceType == DeviceType.CPU)
@@ -67,7 +69,7 @@ namespace RapidOCRSharpOnnx.Inference
             }
             if (size == 0)
             {
-                return [[.. listImg]];
+                return [listImg.ToArray()];
             }
             return listImg.Chunk(size);
         }

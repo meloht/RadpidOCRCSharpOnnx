@@ -32,9 +32,9 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
         public void PreprocessBatchAsync(List<string> listImg, DeviceType deviceType, ChannelWriter<DetPreResultBatch> writer)
         {
-             PreprocessBatchBaseAsync(listImg, deviceType, writer, null, PreprocessChannel);
+            PreprocessBatchBaseAsync(listImg, deviceType, writer, null, PreprocessChannel);
         }
-        protected DetPreResultBatch PreprocessChannel(string imgPath,object obj)
+        protected DetPreResultBatch PreprocessChannel(string imgPath, object obj)
         {
             using Mat img = Cv2.ImRead(imgPath);
             Mat resizedImg = img.Clone();
@@ -146,16 +146,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             if (resizeW <= 0 || resizeH <= 0)
                 throw new Exception("Image scaling failed: resizeW <= 0 or resizeH <= 0");
             // 4. 执行缩放并处理异常
-            try
-            {
-                // 调用OpenCV缩放）
-                Cv2.Resize(img, resized, new Size(resizeW, resizeH));
-            }
-            catch (Exception ex)
-            {
-                // 包装异常并保留原始异常（对应Python的raise ResizeImgError from exc）
-                throw new Exception("Image scaling failed", ex);
-            }
+            Cv2.Resize(img, resized, new Size(resizeW, resizeH));
 
         }
 
