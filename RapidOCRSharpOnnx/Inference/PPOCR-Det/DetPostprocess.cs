@@ -105,12 +105,12 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             // 计算宽度
             float width1 = UtilsHelper.Distance(points[0], points[1]);
             float width2 = UtilsHelper.Distance(points[2], points[3]);
-            int imgCropWidth = (int)Math.Max(width1, width2);
+            float imgCropWidth = Math.Max(width1, width2);
 
             // 计算高度
             float height1 = UtilsHelper.Distance(points[0], points[3]);
             float height2 = UtilsHelper.Distance(points[1], points[2]);
-            int imgCropHeight = (int)Math.Max(height1, height2);
+            float imgCropHeight = Math.Max(height1, height2);
 
             // 目标矩形
             Point2f[] ptsStd = new Point2f[]
@@ -287,14 +287,13 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             Paths64 solution = new Paths64();
             offset.Execute(distance, solution);
 
-            // 5. 处理结果：通常我们取第一个扩张后的多边形（原 Python 代码返回单个多边形）
+            // 5. 处理结果：通常我们取第一个扩张后的多边形
             if (solution.Count == 0)
                 return new OpenCvSharp.Point[0]; // 没有结果时返回空数组
 
             // 将结果中的点缩放回原始坐标并转换为 OpenCV Point
             var expandedPath = solution[0]; // 根据需求，可能需要选择面积最大的轮廓或所有轮廓
             OpenCvSharp.Point[] result = expandedPath.Select(p => new OpenCvSharp.Point((int)p.X, (int)p.Y)).ToArray();
-
             return result;
         }
 
@@ -330,10 +329,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             float minY = contour.Min(p => p.Y);
             float maxY = contour.Max(p => p.Y);
 
-            int xMin = Math.Clamp((int)minX, 0, matPred.Width - 1);
-            int xMax = Math.Clamp((int)maxX, 0, matPred.Width - 1);
-            int yMin = Math.Clamp((int)minY, 0, matPred.Height - 1);
-            int yMax = Math.Clamp((int)maxY, 0, matPred.Height - 1);
+            int xMin = Math.Clamp((int)Math.Round(minX, 0), 0, matPred.Width - 1);
+            int xMax = Math.Clamp((int)Math.Round(maxX, 0), 0, matPred.Width - 1);
+            int yMin = Math.Clamp((int)Math.Round(minY, 0), 0, matPred.Height - 1);
+            int yMax = Math.Clamp((int)Math.Round(maxY, 0), 0, matPred.Height - 1);
 
             // 创建掩码
             Mat mask = Mat.Zeros(new OpenCvSharp.Size(xMax - xMin + 1, yMax - yMin + 1), MatType.CV_8UC1);
@@ -356,15 +355,15 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             float minY = box.Min(p => p.Y);
             float maxY = box.Max(p => p.Y);
 
-            int xMin = Math.Clamp((int)Math.Floor(minX), 0, matPred.Width - 1);
-            int xMax = Math.Clamp((int)Math.Ceiling(maxX), 0, matPred.Width - 1);
-            int yMin = Math.Clamp((int)Math.Floor(minY), 0, matPred.Height - 1);
-            int yMax = Math.Clamp((int)Math.Ceiling(maxY), 0, matPred.Height - 1);
+            int xMin = Math.Clamp((int)Math.Round(Math.Floor(minX), 0), 0, matPred.Width - 1);
+            int xMax = Math.Clamp((int)Math.Round(Math.Ceiling(maxX), 0), 0, matPred.Width - 1);
+            int yMin = Math.Clamp((int)Math.Round(Math.Floor(minY), 0), 0, matPred.Height - 1);
+            int yMax = Math.Clamp((int)Math.Round(Math.Ceiling(maxY), 0), 0, matPred.Height - 1);
 
             // 创建掩码
             Mat mask = Mat.Zeros(new OpenCvSharp.Size(xMax - xMin + 1, yMax - yMin + 1), MatType.CV_8UC1);
             Point2f[] boxShifted = box.Select(p => new Point2f(p.X - xMin, p.Y - yMin)).ToArray();
-            OpenCvSharp.Point[][] pts = [boxShifted.Select(p => new OpenCvSharp.Point((int)p.X, (int)p.Y)).ToArray()];
+            OpenCvSharp.Point[][] pts = [boxShifted.Select(p => new OpenCvSharp.Point((int)Math.Round(p.X, 0), (int)Math.Round(p.Y, 0))).ToArray()];
 
             // 填充多边形
             Cv2.FillPoly(mask, pts, Scalar.White);

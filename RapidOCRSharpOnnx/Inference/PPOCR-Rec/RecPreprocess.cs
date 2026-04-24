@@ -19,7 +19,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
         {
             _recConfig = recConfig;
         }
-        public int ResizeNormImg(Mat img, int idx, float[] inputData, int img_width)
+        public int ResizeNormImg(Mat img, int idx, float[] inputData, int img_width, int max_wh_ratio)
         {
             // 获取原图尺寸和通道数
             int h = img.Height;
@@ -33,9 +33,9 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 
             // 计算缩放后的宽度（保持宽高比，但不超过目标宽度）
             float ratio = (float)w / h;
-            double estimatedWidth = Math.Ceiling(img_h * ratio);
+            int estimatedWidth = (int)Math.Round(Math.Ceiling(img_h * ratio), 0);
 
-            int resized_w = estimatedWidth > img_width ? img_width : (int)estimatedWidth;
+            int resized_w = estimatedWidth > max_wh_ratio ? max_wh_ratio : estimatedWidth;
 
             // 缩放图像到 (resized_w, img_h)
             using Mat resized = new Mat();
@@ -63,6 +63,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             return idx;
         }
 
+
         public void PreprocessBatchAsync(DisposableList<ImageIndex> imgCropList, DeviceType deviceType, OcrBatchResult batchResult, ChannelWriter<RecPreResultBatch> writer)
         {
 
@@ -78,11 +79,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             float wh_ratio = (float)img.Width / (float)img.Height;
             max_wh_ratio = Math.Max(max_wh_ratio, wh_ratio);
 
-            int img_width = (int)(img_h * max_wh_ratio);
+            int img_width = (int)Math.Round(img_h * max_wh_ratio, 0);
             int tensorLength = img_c * img_h * img_width;
 
             float[] inputData = new float[tensorLength];
-            ResizeNormImg(img, 0, inputData, img_width);
+            ResizeNormImg(img, 0, inputData, img_width, img_width);
             return new RecPreResultBatch(batchResult, inputData, batchImage.Index, max_wh_ratio, wh_ratio);
 
 

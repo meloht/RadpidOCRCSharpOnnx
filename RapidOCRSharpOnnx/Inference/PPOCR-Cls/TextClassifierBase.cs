@@ -40,15 +40,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
         {
             PerfModel perf = new PerfModel();
 
-            int[] indices = new int[imgList.Count];
             float[] widthList = new float[imgList.Count];
-            for (int i = 0; i < indices.Length; i++)
-            {
-                indices[i] = i;
-                widthList[i] = (float)imgList[i].Image.Width / (float)imgList[i].Image.Height;
-            }
-
-            Array.Sort(indices, (a, b) => widthList[a].CompareTo(widthList[b]));
+  
             int imgCount = imgList.Count;
             ClsResult[] cls_res = new ClsResult[imgCount];
             for (int i = 0; i < imgCount; i++)
@@ -70,7 +63,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 idx = 0;
                 for (int j = i; j < endNo; j++)
                 {
-                    idx = _clsPreprocess.ResizeNormImg(imgList[indices[j]].Image, idx, batchData);
+                    idx = _clsPreprocess.ResizeNormImg(imgList[j].Image, idx, batchData);
                 }
 
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_w });
@@ -95,6 +88,40 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             resultPerf.Perf = perf;
             return resultPerf;
         }
+        public ResultPerf<ClsResult[]> TextClassifySeq(DisposableList<ImageIndex> imgList)
+        {
+            PerfModel perf = new PerfModel();
+            ClsResult[] results = new ClsResult[imgList.Count];
+            int img_c = _clsImageShape[0];
+            int img_h = _clsImageShape[1];
+            int img_w = _clsImageShape[2];
+            foreach (var item in imgList)
+            {
+                _stopwatch.Restart();
+                float[] batchData = new float[1 * img_c * img_h * img_w];
+                _clsPreprocess.ResizeNormImg(item.Image, 0, batchData);
+
+                using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { 1, img_c, img_h, img_w });
+
+                _stopwatch.Stop();
+                perf.Preprocess += _stopwatch.ElapsedMilliseconds;
+
+                using var output = InferenceRun(inputOrtValue, perf);
+                _stopwatch.Restart();
+                using var ortValue = output[0];
+                results[item.Index] = _clsPostprocess.ClsPostProcess(ortValue, item.Image);
+
+                _stopwatch.Stop();
+                perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+            }
+
+            perf.SumTotal();
+            var resultPerf = new ResultPerf<ClsResult[]>();
+            resultPerf.Data = results;
+            resultPerf.Perf = perf;
+            return resultPerf;
+        }
+
 
 
         public void BatchClsAsync(OcrBatchResult batchResult, ChannelWriter<OcrBatchResult> recChannelWriter)
@@ -106,7 +133,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             var consumer = WriteRecAsync(batchResult, channelPre, recChannelWriter);
 
             Task.WaitAll(producer, consumer);
-           
+
 
         }
         private async Task WriteRecAsync(OcrBatchResult batchResult, Channel<ClsPreResultBatch> channelPre, ChannelWriter<OcrBatchResult> recChannelWriter)
@@ -134,7 +161,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 
             }
 
-          
+
         }
 
         private async Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, OcrBatchResult item, Mat img, int index, ChannelWriter<OcrBatchResult> writer)

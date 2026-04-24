@@ -13,6 +13,8 @@ namespace RapidOCRSharpOnnx.Inference
     {
         ResultPerf<RecResult[]> TextRecognize(DisposableList<ImageIndex> imgList);
 
+        ResultPerf<RecResult[]> TextRecognizeSeq(DisposableList<ImageIndex> imgList);
+
         void BatchRecAsync(OcrBatchResult batchResult);
     }
 }

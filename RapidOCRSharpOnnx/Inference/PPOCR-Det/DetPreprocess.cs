@@ -201,12 +201,12 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                     ratio = maxSideLen / w;
             }
 
-            int resizeH = (int)(h * ratio);
-            int resizeW = (int)(w * ratio);
+            int resizeH = (int)Math.Round((h * ratio), 0);
+            int resizeW = (int)Math.Round((w * ratio), 0);
 
             // 调整为32的倍数
-            resizeH = (int)(Math.Round(resizeH / 32.0, MidpointRounding.AwayFromZero) * 32);
-            resizeW = (int)(Math.Round(resizeW / 32.0, MidpointRounding.AwayFromZero) * 32);
+            resizeH = (int)Math.Round((Math.Round(resizeH / 32.0, MidpointRounding.AwayFromZero) * 32), 0);
+            resizeW = (int)Math.Round((Math.Round(resizeW / 32.0, MidpointRounding.AwayFromZero) * 32), 0);
 
             if (resizeH <= 0 || resizeW <= 0)
                 throw new Exception("The adjusted width or height is less than or equal to 0");
@@ -241,12 +241,12 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                     ratio = minSideLen / w;
             }
 
-            int resizeH = (int)(h * ratio);
-            int resizeW = (int)(w * ratio);
+            int resizeH = (int)Math.Round((h * ratio), 0);
+            int resizeW = (int)Math.Round((w * ratio), 0);
 
             // 调整为32的倍数
-            resizeH = (int)(Math.Round(resizeH / 32.0, MidpointRounding.AwayFromZero) * 32);
-            resizeW = (int)(Math.Round(resizeW / 32.0, MidpointRounding.AwayFromZero) * 32);
+            resizeH = (int)Math.Round((Math.Round(resizeH / 32.0, MidpointRounding.AwayFromZero) * 32), 0);
+            resizeW = (int)Math.Round((Math.Round(resizeW / 32.0, MidpointRounding.AwayFromZero) * 32), 0);
 
             if (resizeH <= 0 || resizeW <= 0)
                 throw new Exception("The adjusted width or height is less than or equal to 0");

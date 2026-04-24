@@ -13,6 +13,8 @@ namespace RapidOCRSharpOnnx.Inference
     {
         ResultPerf<ClsResult[]> TextClassify(DisposableList<ImageIndex> imgList);
 
+        ResultPerf<ClsResult[]> TextClassifySeq(DisposableList<ImageIndex> imgList);
+
         void BatchClsAsync(OcrBatchResult batchResult, ChannelWriter<OcrBatchResult> nextChannelWriter);
     }
 }

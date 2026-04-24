@@ -34,6 +34,11 @@ namespace RapidOCRSharpOnnx
             ValidationUtils.ValidateImage(imagePath);
             return _executePipeline.RecognizeText(imagePath, savePath);
         }
+        public OcrResult RecognizeTextSeq(string imagePath, string savePath = null)
+        {
+            ValidationUtils.ValidateImage(imagePath);
+            return _executePipeline.RecognizeTextSeq(imagePath, savePath);
+        }
         public OcrResult RecognizeText(Mat image, string savePath = null)
         {
             return _executePipeline.RecognizeText(image, savePath);

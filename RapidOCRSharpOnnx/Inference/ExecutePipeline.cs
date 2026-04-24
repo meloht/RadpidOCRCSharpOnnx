@@ -194,7 +194,42 @@ namespace RapidOCRSharpOnnx.Inference
 
             return result;
         }
+        public OcrResult RecognizeTextSeq(string imagePath, string savePath = null)
+        {
+            using Mat image = Cv2.ImRead(imagePath);
+            OcrResult result = new OcrResult();
+            var detResult = _ocrDetector.TextDetect(image);
+            result.DetResult = detResult;
+            if (detResult.Data.ImgCropList == null || detResult.Data.ImgCropList.Count == 0)
+            {
+                return result;
+            }
+            using (detResult.Data.ImgCropList)
+            {
 
+                if (_ocrClassifier != null)
+                {
+                    var ClsResult = _ocrClassifier.TextClassifySeq(detResult.Data.ImgCropList);
+                    result.ClsResult = ClsResult;
+                }
+
+                var recResults = _ocrRecognizer.TextRecognizeSeq(detResult.Data.ImgCropList);
+                result.RecResult = recResults;
+
+                for (int i = 0; i < detResult.Data.DetItems.Length; i++)
+                {
+                    detResult.Data.DetItems[i].Word = recResults.Data[i].Label;
+                }
+                result.TextBlocks = string.Join(" ", recResults.Data.Select(r => r.Label));
+
+                if (!string.IsNullOrEmpty(savePath))
+                {
+                    _ocrDrawerSkia.DrawTextBlock(image, savePath, detResult.Data, recResults.Data);
+                }
+            }
+
+            return result;
+        }
         public void Dispose()
         {
             _ocrDetector?.Dispose();
