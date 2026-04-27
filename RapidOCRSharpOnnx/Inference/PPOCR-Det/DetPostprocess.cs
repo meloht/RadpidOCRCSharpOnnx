@@ -160,32 +160,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 box[i].Y = Math.Clamp(box[i].Y, 0, maxY);
             }
         }
-        /// <summary>
-        /// 顺时针排序框的4个点
-        /// </summary>
-        private void OrderPointsClockwise(Point2f[] pts)
-        {
-            // 按X坐标排序
-            Array.Sort(pts, (a, b) => a.X.CompareTo(b.X));
-            Point2f[] left = pts.Take(2).ToArray();
-            Point2f[] right = pts.Skip(2).ToArray();
 
-            // 左半部分按Y排序
-            Array.Sort(left, (a, b) => a.Y.CompareTo(b.Y));
-            Point2f tl = left[0];
-            Point2f bl = left[1];
-
-            // 右半部分按Y排序
-            Array.Sort(right, (a, b) => a.Y.CompareTo(b.Y));
-            Point2f tr = right[0];
-            Point2f br = right[1];
-
-            // 重新赋值
-            pts[0] = tl;
-            pts[1] = tr;
-            pts[2] = br;
-            pts[3] = bl;
-        }
         /// <summary>
         /// 从二值化图提取检测框
         /// </summary>
@@ -228,12 +203,12 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 if (unclipSside < _minSize + 2)
                     continue;
 
-                var box = NormalizeBox(unclipBox, width, destWidth, height, destHeight);
+                NormalizeBox(unclipBox, width, destWidth, height, destHeight);
 
                 // 过滤无效框
-                if (FilterBoxes(box, destHeight, destWidth))
+                if (FilterBoxes(unclipBox, destHeight, destWidth))
                 {
-                    detPostprocessItems.Add(new DetBoxItem(box, score, 0, null));
+                    detPostprocessItems.Add(new DetBoxItem(unclipBox, score, 0, null));
                 }
             }
 
@@ -244,13 +219,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
         private bool FilterBoxes(Point2f[] box, int imgH, int imgW)
         {
-            // 1. 顺时针排序点
-            OrderPointsClockwise(box);
-
-            // 2. 裁剪到图像范围内
+            // 1. 裁剪到图像范围内
             ClipBox(box, imgH, imgW);
 
-            // 3. 过滤过小的框
+            // 2. 过滤过小的框
             float width = (float)Math.Sqrt(Math.Pow(box[1].X - box[0].X, 2) + Math.Pow(box[1].Y - box[0].Y, 2));
             float height = (float)Math.Sqrt(Math.Pow(box[3].X - box[0].X, 2) + Math.Pow(box[3].Y - box[0].Y, 2));
             if (width <= 3 || height <= 3)
@@ -293,17 +265,19 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
             // 将结果中的点缩放回原始坐标并转换为 OpenCV Point
             var expandedPath = solution[0]; // 根据需求，可能需要选择面积最大的轮廓或所有轮廓
-            OpenCvSharp.Point[] result = expandedPath.Select(p => new OpenCvSharp.Point((int)p.X, (int)p.Y)).ToArray();
+            OpenCvSharp.Point[] result = new Point[expandedPath.Count];
+            for (int i = 0; i < expandedPath.Count; i++)
+            {
+                result[i] = new Point((int)expandedPath[i].X, (int)expandedPath[i].Y);
+            }
             return result;
         }
 
         /// <summary>
         /// 坐标归一化
         /// </summary>
-        private Point2f[] NormalizeBox(Point2f[] box, int width, int destWidth, int height, int destHeight)
+        private void NormalizeBox(Point2f[] box, int width, int destWidth, int height, int destHeight)
         {
-            Point2f[] destPoints = new Point2f[4];
-
             for (int i = 0; i < box.Length; i++)
             {
                 float x = box[i].X;
@@ -316,10 +290,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 newX = Math.Clamp(newX, 0, destWidth);
                 newY = Math.Clamp(newY, 0, destHeight);
 
-                destPoints[i].X = newX;
-                destPoints[i].Y = newY;
+                box[i].X = newX;
+                box[i].Y = newY;
             }
-            return destPoints;
+            //return destPoints;
         }
         private float BoxScoreSlow(Mat matPred, OpenCvSharp.Point[] contour)
         {
@@ -335,14 +309,14 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             int yMax = Math.Clamp((int)Math.Round(maxY, 0), 0, matPred.Height - 1);
 
             // 创建掩码
-            Mat mask = Mat.Zeros(new OpenCvSharp.Size(xMax - xMin + 1, yMax - yMin + 1), MatType.CV_8UC1);
+            using Mat mask = Mat.Zeros(new OpenCvSharp.Size(xMax - xMin + 1, yMax - yMin + 1), MatType.CV_8UC1);
             OpenCvSharp.Point[] contourShifted = contour.Select(p => new OpenCvSharp.Point(p.X - xMin, p.Y - yMin)).ToArray();
             OpenCvSharp.Point[][] pts = [contourShifted];
 
             // 填充多边形
             Cv2.FillPoly(mask, pts, Scalar.White);
             Rect roi = new Rect(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
-            Mat roiMat = new Mat(matPred, roi);
+            using Mat roiMat = new Mat(matPred, roi);
             Scalar meanValue = Cv2.Mean(roiMat, mask);
             return (float)meanValue.Val0;
         }
@@ -361,15 +335,15 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             int yMax = Math.Clamp((int)Math.Round(Math.Ceiling(maxY), 0), 0, matPred.Height - 1);
 
             // 创建掩码
-            Mat mask = Mat.Zeros(new OpenCvSharp.Size(xMax - xMin + 1, yMax - yMin + 1), MatType.CV_8UC1);
-            Point2f[] boxShifted = box.Select(p => new Point2f(p.X - xMin, p.Y - yMin)).ToArray();
-            OpenCvSharp.Point[][] pts = [boxShifted.Select(p => new OpenCvSharp.Point((int)Math.Round(p.X, 0), (int)Math.Round(p.Y, 0))).ToArray()];
+            using Mat mask = Mat.Zeros(new OpenCvSharp.Size(xMax - xMin + 1, yMax - yMin + 1), MatType.CV_8UC1);
+            Point[] boxShifted = box.Select(p => new Point((int)Math.Round(p.X - xMin, 0), (int)Math.Round(p.Y - yMin, 0))).ToArray();
+            OpenCvSharp.Point[][] pts = [boxShifted];
 
             // 填充多边形
             Cv2.FillPoly(mask, pts, Scalar.White);
 
             Rect roi = new Rect(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
-            Mat roiMat = new Mat(matPred, roi);
+            using Mat roiMat = new Mat(matPred, roi);
             Scalar meanValue = Cv2.Mean(roiMat, mask);
             return (float)meanValue.Val0;
         }
@@ -379,25 +353,24 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         /// </summary>
         private (Point2f[], float) GetMiniBoxes(OpenCvSharp.Point[] contour)
         {
-            // 最小外接矩形（对应cv2.minAreaRect）
+            // 最小外接矩形
             RotatedRect rect = Cv2.MinAreaRect(contour);
             Point2f[] points = Cv2.BoxPoints(rect);
             Array.Sort(points, (a, b) => a.X.CompareTo(b.X));
 
 
             // 排序点（保证顺时针）
-            Point2f[] box = new Point2f[4];
-            int idx1 = points[1].Y > points[0].Y ? 0 : 1;
-            int idx4 = points[1].Y > points[0].Y ? 1 : 0;
-            int idx2 = points[3].Y > points[2].Y ? 2 : 3;
-            int idx3 = points[3].Y > points[2].Y ? 3 : 2;
+            var idx1 = points[1].Y > points[0].Y ? points[0] : points[1];
+            var idx4 = points[1].Y > points[0].Y ? points[1] : points[0];
+            var idx2 = points[3].Y > points[2].Y ? points[2] : points[3];
+            var idx3 = points[3].Y > points[2].Y ? points[3] : points[2];
 
-            box[0] = points[idx1];
-            box[1] = points[idx2];
-            box[2] = points[idx3];
-            box[3] = points[idx4];
+            points[0] = idx1;
+            points[1] = idx2;
+            points[2] = idx3;
+            points[3] = idx4;
 
-            return (box, Math.Min(rect.Size.Width, rect.Size.Height));
+            return (points, Math.Min(rect.Size.Width, rect.Size.Height));
 
         }
     }
