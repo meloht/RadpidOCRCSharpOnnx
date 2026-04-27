@@ -37,7 +37,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             return _clsImageShape;
         }
 
-        public int ResizeNormImg(Mat img, int idx, float[] inputData)
+        public void ResizeNormImg(Mat img, int idx, float[] inputData)
         {
             // 获取原图尺寸和通道数
             int h = img.Height;
@@ -59,28 +59,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             // 缩放图像到 (resized_w, img_h)
             using Mat resized = new Mat();
             Cv2.Resize(img, resized, new OpenCvSharp.Size(resized_w, img_h), interpolation: InterpolationFlags.Linear);
+            ConvertToNormImg(resized_w, idx, img_c, img_h, img_w, resized, inputData);
 
-            for (int i = 0; i < img_c; i++)
-            {
-                for (int j = 0; j < img_h; j++)
-                {
-                    for (int k = 0; k < img_w; k++)
-                    {
-                        if (k < resized_w)
-                        {
-                            var val = (float)resized.At<Vec3b>(j, k)[i];
-                            val = (val / 255.0f) * 2f - 1f;
-                            inputData[idx++] = val;
-                        }
-                        else
-                        {
-                            inputData[idx++] = 0.0f;
-                        }
-                    }
-                }
-            }
-            return idx;
         }
+
+
 
         public void PreprocessBatchAsync(DisposableList<ImageIndex> imgCropList, DeviceType deviceType, ChannelWriter<ClsPreResultBatch> writer)
         {

@@ -64,8 +64,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             int img_h = _ocrConfig.RecognizerConfig.RecImgShape[1];
             int img_w = _ocrConfig.RecognizerConfig.RecImgShape[2];
 
-            int idx = 0;
-
             for (int i = 0, imgIdx = 0; i < imgCount; i += _ocrConfig.RecognizerConfig.RecBatchNum)
             {
                 _stopwatch.Restart();
@@ -91,12 +89,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 
                 float[] batchData = new float[tensorLength];
 
-
-                idx = 0;
                 for (int j = i, ratioIdx = 0; j < endNo; j++, ratioIdx++)
                 {
                     int img_max_width = (int)Math.Round(img_h * max_wh_ratio_list[ratioIdx], 0);
-                    idx = _recPreprocess.ResizeNormImg(imgList[j].Image, idx, batchData, img_width, img_max_width);
+                    _recPreprocess.ResizeNormImg(imgList[j].Image, ratioIdx, batchData, img_width, img_max_width);
                 }
 
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_width });

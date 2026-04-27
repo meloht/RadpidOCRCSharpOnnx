@@ -55,13 +55,13 @@ namespace RapidOCRSharpOnnx
             return _executePipeline.BatchAsync(imageList, saveDir);
         }
 
-        //public async IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList)
-        //{
-        //    await foreach (var result in _executePipeline.BatchForeachAsync(imageList))
-        //    {
-        //        yield return result;
-        //    }
-        //}
+        public async IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList, string saveDir = null)
+        {
+           await foreach (var result in _executePipeline.BatchForeachAsync(imageList, saveDir))
+           {
+               yield return result;
+           }
+        }
 
 
         public void Dispose()

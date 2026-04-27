@@ -12,7 +12,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 {
     public interface IClsPreprocess
     {
-        int ResizeNormImg(Mat img, int idx, float[] inputData);
+        void ResizeNormImg(Mat img, int idx, float[] inputData);
 
         void PreprocessBatchAsync(DisposableList<ImageIndex> ImgCropList, DeviceType deviceType, ChannelWriter<ClsPreResultBatch> writer);
 

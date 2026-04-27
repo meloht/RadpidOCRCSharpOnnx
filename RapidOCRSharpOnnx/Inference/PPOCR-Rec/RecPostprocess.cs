@@ -132,10 +132,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                 for (int i = 0; i < values[batchIdx].Length; i++)
                 {
                     if (selection[i])
-                        confList.Add(values[batchIdx][i]);
+                        confList.Add((float)Math.Round(values[batchIdx][i], 5));
                 }
-                // 四舍五入到5位小数
-                confList = confList.Select(c => (float)Math.Round(c, 5)).ToList();
             }
             else
             {
