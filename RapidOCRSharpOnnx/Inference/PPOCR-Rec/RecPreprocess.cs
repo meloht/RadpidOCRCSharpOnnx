@@ -19,7 +19,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
         {
             _recConfig = recConfig;
         }
-        public int ResizeNormImg(Mat img, int idx, float[] inputData, int img_width, int max_wh_ratio)
+        public void ResizeNormImg(Mat img, int idx, float[] inputData, int img_width, int max_wh_ratio)
         {
             // 获取原图尺寸和通道数
             int h = img.Height;
@@ -41,28 +41,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             using Mat resized = new Mat();
             Cv2.Resize(img, resized, new OpenCvSharp.Size(resized_w, img_h));
 
-            for (int i = 0; i < img_c; i++)
-            {
-                for (int j = 0; j < img_h; j++)
-                {
-                    for (int k = 0; k < img_width; k++)
-                    {
-                        if (k < resized_w)
-                        {
-                            var val = (float)resized.At<Vec3b>(j, k)[i];
-                            val = (val / 255.0f) * 2f - 1f;
-                            inputData[idx++] = val;
-                        }
-                        else
-                        {
-                            inputData[idx++] = 0.0f;
-                        }
-                    }
-                }
-            }
-            return idx;
-        }
+            ConvertToNormImg(resized_w, idx, img_c, img_h, img_width, resized, inputData);
 
+        }
+     
 
         public void PreprocessBatchAsync(DisposableList<ImageIndex> imgCropList, DeviceType deviceType, ChannelWriter<RecPreResultBatch> writer)
         {

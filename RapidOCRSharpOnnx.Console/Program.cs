@@ -15,28 +15,30 @@ namespace RapidOCRSharpOnnx.ConsoleApp
             var buildNumber = Environment.OSVersion.Version.Build;
             //TestBatch();
             //_=TestBatchForeachAsync();
-            TestListSeq();
-           // TestListSeq2();
+            // TestListSeq();
+            // TestListSeq2();
+            TestImage();
             Console.WriteLine("123");
             Console.ReadKey();
-            //TestImage();
+           
         }
 
         private static void TestImage()
         {
-            string imgPath = @"E:\Hp\ai-image\ADFtools\headerText.png";
-            //string detectPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_det_mobile.onnx";
-            //string recogPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_rec_mobile.onnx";
-            //string clsPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx";
+            //string imgPath = @"E:\Hp\ai-image\ADFtools\headerText.png";
+            string imgPath = @"D:\code\model\OCRTestImages\headerText.png";
+            //string detectPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv4_det_mobile.onnx";
+            //string recogPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv4_rec_mobile.onnx";
+            //string clsPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_ppocr_mobile_v2.0_cls_mobile.onnx";
 
             string detectPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_det_mobile.onnx";
             string recogPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_rec_mobile.onnx";
             string clsPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx";
 
-            using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderCPU(new OcrConfig(detectPath, recogPath, LangRec.CH, OCRVersion.PPOCRV5, clsPath)));
+            using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderDirectML(new OcrConfig(detectPath, recogPath, LangRec.CH, OCRVersion.PPOCRV5, clsPath), _deviceId));
 
             string resPath = $"res_{Path.GetFileName(imgPath)}";
-            var result = ocr.RecognizeTextSeq(imgPath, resPath);
+            var result = ocr.RecognizeText(imgPath, resPath);
             Console.WriteLine($"result: {result.ToString()}");
         }
 

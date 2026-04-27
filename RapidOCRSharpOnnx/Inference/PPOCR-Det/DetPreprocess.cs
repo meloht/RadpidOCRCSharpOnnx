@@ -457,7 +457,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 BorderTypes.Constant,
                 _paddingColor // 黑色填充，根据图像通道数自动适应
             );
-
+   
         }
 
     }

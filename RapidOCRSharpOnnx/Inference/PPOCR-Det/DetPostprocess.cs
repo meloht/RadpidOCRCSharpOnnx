@@ -50,17 +50,17 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             int h = (int)shape[2];
             int w = (int)shape[3];
 
-            Mat matPred = new Mat(h, w, MatType.CV_32FC1);
+            using Mat matPred = new Mat(h, w, MatType.CV_32FC1);
             matPred.SetArray(dataArray.ToArray());
 
-            Mat mask = new Mat();
+            using Mat mask = new Mat();
             Cv2.Threshold(matPred, mask, _detConfig.Thresh, 255, ThresholdTypes.Binary);
 
 
             mask.ConvertTo(mask, MatType.CV_8UC1); // 转为8位单通道（FindContours要求）
             if (_detConfig.UseDilation)
             {
-                Mat kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
+                using Mat kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(2, 2));
 
                 Cv2.Dilate(mask, mask, kernel);
             }
@@ -122,7 +122,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             };
 
             // 透视变换矩阵
-            Mat M = Cv2.GetPerspectiveTransform(points, ptsStd);
+            using Mat M = Cv2.GetPerspectiveTransform(points, ptsStd);
 
             // 透视变换
             Mat dstImg = new Mat();
@@ -367,7 +367,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
             // 填充多边形
             Cv2.FillPoly(mask, pts, Scalar.White);
-
 
             Rect roi = new Rect(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
             Mat roiMat = new Mat(matPred, roi);
