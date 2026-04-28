@@ -19,15 +19,13 @@ namespace RapidOCRSharpOnnx
 
         public RecResult[] RecResult { get; set; }
 
-        /// <summary>
-        /// DateTimeOffset.UtcNow.ToUnixTimeMilliseconds
-        /// </summary>
-        public long StartTimestamp { get; set; }
-        public long EndTimestamp { get; set; }
+        public long DetTimestamp { get; set; }
+        public long ClsTimestamp { get; set; }
+        public long RecTimestamp { get; set; }
 
         public override string ToString()
         {
-            return $"{TextBlocks}{System.Environment.NewLine}Time: {EndTimestamp-StartTimestamp}{System.Environment.NewLine}";
+            return $"{TextBlocks}{System.Environment.NewLine}TotalTime: {DetTimestamp+ ClsTimestamp+ RecTimestamp}ms DetInfer:{DetTimestamp}ms ClsInfer:{ClsTimestamp}ms RecInfer:{RecTimestamp}ms{System.Environment.NewLine}";
         }
     }
 }

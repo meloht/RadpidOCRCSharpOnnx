@@ -11,6 +11,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 
@@ -106,10 +107,12 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             await foreach (DetPreResultBatch item in channelDet.Reader.ReadAllAsync())
             {
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.PreResult.Data, item.PreResult.Dimensions);
-                //Console.WriteLine($"Detect batch {item.ImagePathIndex.Index}");
-                batchResults[item.ImagePathIndex.Index].StartTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                var output0 = InferenceRun(inputOrtValue, null);
 
+                long start = Stopwatch.GetTimestamp();
+
+                var output0 = InferenceRun(inputOrtValue, null);
+                long end = Stopwatch.GetTimestamp();
+                batchResults[item.ImagePathIndex.Index].DetTimestamp = (long)((end - start) * 1000.0 / Stopwatch.Frequency);
                 producer[idx] = BatchPostProcessAsync(output0, item, batchResults[item.ImagePathIndex.Index], nextChannelWriter);
                 Interlocked.Increment(ref idx);
             }

@@ -43,24 +43,24 @@ namespace RapidOCRSharpOnnx
         {
             return _executePipeline.RecognizeText(image, savePath);
         }
-        public OcrBatchResult[] BatchAsync(string dir, string saveDir = null)
+        public OcrBatchResult[] BatchAsync(string dir, string saveDir = null, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null)
         {
             var list = ValidationUtils.ValidationImageBatch(dir, Configuration.BatchPoolSize);
-            return _executePipeline.BatchAsync(list, saveDir);
+            return _executePipeline.BatchAsync(list, saveDir, processCallback, receiveAction);
         }
-        public OcrBatchResult[] BatchAsync(List<string> imageList, string saveDir = null)
+        public OcrBatchResult[] BatchAsync(List<string> imageList, string saveDir = null, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null)
         {
             var list = UtilsHelper.GetFilesFromListPaths(imageList);
             ValidationUtils.ValidationImageListCount(list);
-            return _executePipeline.BatchAsync(imageList, saveDir);
+            return _executePipeline.BatchAsync(imageList, saveDir, processCallback, receiveAction);
         }
 
-        public async IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList, string saveDir = null)
+        public async IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList, string saveDir = null, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null)
         {
-           await foreach (var result in _executePipeline.BatchForeachAsync(imageList, saveDir))
-           {
-               yield return result;
-           }
+            await foreach (var result in _executePipeline.BatchForeachAsync(imageList, saveDir, processCallback, receiveAction))
+            {
+                yield return result;
+            }
         }
 
 

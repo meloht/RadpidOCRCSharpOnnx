@@ -36,7 +36,7 @@ namespace RapidOCRSharpOnnx.Inference
             _ocrDrawerSkia = new OcrDrawerSkia(_ocrConfig);
         }
 
-        public OcrBatchResult[] BatchAsync(List<string> imageList, string saveDir = null)
+        public OcrBatchResult[] BatchAsync(List<string> imageList, string saveDir = null, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null)
         {
             OcrBatchResult[] batchResults = new OcrBatchResult[imageList.Count];
             for (int i = 0; i < imageList.Count; i++)
@@ -63,7 +63,7 @@ namespace RapidOCRSharpOnnx.Inference
                     tasks.Add(consumerCls);
                 }
 
-                var consumerRec = BatchRecRead(channelRecPre);
+                var consumerRec = BatchRecRead(channelRecPre, processCallback, receiveAction);
 
                 tasks.Add(consumerRec);
 
@@ -77,7 +77,7 @@ namespace RapidOCRSharpOnnx.Inference
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw;
             }
@@ -91,14 +91,31 @@ namespace RapidOCRSharpOnnx.Inference
             return batchResults;
         }
 
-        private async Task BatchRecRead(Channel<OcrBatchResult> channelRecPre)
+        private async Task BatchRecRead(Channel<OcrBatchResult> channelRecPre, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null)
         {
             await foreach (OcrBatchResult item in channelRecPre.Reader.ReadAllAsync())
             {
                 _ocrRecognizer.BatchRecAsync(item);
+                _ = InferCompleteAsync(item, processCallback, receiveAction);
             }
         }
-
+        private async Task InferCompleteAsync(OcrBatchResult result, IBatchProcessCallback processCallback, Action<OcrBatchResult> receiveAction)
+        {
+            if (processCallback != null)
+            {
+                await Task.Run(async () =>
+                {
+                    processCallback.ReceiveProcessResult(result);
+                });
+            }
+            if (receiveAction != null)
+            {
+                await Task.Run(async () =>
+                {
+                    receiveAction(result);
+                });
+            }
+        }
         private async Task BatchClsRead(Channel<OcrBatchResult> channel, ChannelWriter<OcrBatchResult> recChannelWriter)
         {
             await foreach (OcrBatchResult item in channel.Reader.ReadAllAsync())
@@ -119,7 +136,7 @@ namespace RapidOCRSharpOnnx.Inference
             }
         }
 
-        public async IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList, string saveDir = null)
+        public async IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList, string saveDir = null, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null)
         {
             OcrBatchResult[] batchResults = new OcrBatchResult[imageList.Count];
             for (int i = 0; i < imageList.Count; i++)
@@ -151,6 +168,7 @@ namespace RapidOCRSharpOnnx.Inference
             await foreach (OcrBatchResult item in channelRecPre.Reader.ReadAllAsync())
             {
                 _ocrRecognizer.BatchRecAsync(item);
+                _ = InferCompleteAsync(item, processCallback, receiveAction);
                 SaveImageWithTextBlocks(item, saveDir);
                 item.DetResult?.ImgCropList?.Dispose();
                 yield return item;

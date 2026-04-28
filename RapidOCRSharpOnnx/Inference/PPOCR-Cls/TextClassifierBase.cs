@@ -170,7 +170,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             foreach (var item in imgList)
             {
                 _stopwatch.Restart();
-               
+
                 _clsPreprocess.ResizeNormImg(item.Image, _resizedImg, _inputFixedBuffer);
 
                 _stopwatch.Stop();
@@ -201,7 +201,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
 
             int count = batchResult.DetResult.ImgCropList.Count;
             batchResult.ClsResult = new ClsResult[count];
-            MarkBatchItemCompleted(batchResult);
+
             Channel<ClsPreResultBatch> channelPre = Channel.CreateBounded<ClsPreResultBatch>(UtilsHelper.GetChannelOptions(_ocrConfig.BatchPoolSize));
 
             var producer = Task.Run(() => _clsPreprocess.PreprocessBatchAsync(batchResult.DetResult.ImgCropList, _matPool, _deviceType, channelPre.Writer));
@@ -220,8 +220,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             int idx = 0;
             await foreach (ClsPreResultBatch item in channelPre.Reader.ReadAllAsync())
             {
-                //Console.WriteLine($"{DateTime.Now} Cls batch {item.ImageIndex.Index}");
+
+                long start = Stopwatch.GetTimestamp();
                 var output0 = InferenceRun(item.InputData.InputOrtValue, null);
+                long end = Stopwatch.GetTimestamp();
+                batchResult.ClsTimestamp = (long)((end - start) * 1000.0 / Stopwatch.Frequency);
                 _matPool.Return(item.InputData);
                 producer[idx] = BatchPostProcessAsync(output0, batchResult, item);
                 Interlocked.Increment(ref idx);
@@ -239,7 +242,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 {
                     using var ortValue = output[0];
                     batchResult.ClsResult[item.ImageIndex.Index] = _clsPostprocess.ClsPostProcess(ortValue, item.ImageIndex.Image);
-                   // Console.WriteLine($"Cls batch Write {item.ImageIndex.Index}");
+                    // Console.WriteLine($"Cls batch Write {item.ImageIndex.Index}");
 
                 }
             });

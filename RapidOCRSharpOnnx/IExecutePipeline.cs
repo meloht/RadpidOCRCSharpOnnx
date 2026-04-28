@@ -14,7 +14,7 @@ namespace RapidOCRSharpOnnx
 
         OcrResult RecognizeTextSeq(string imagePath, string savePath = null);
 
-        IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList, string saveDir = null);
-        OcrBatchResult[] BatchAsync(List<string> imageList, string saveDir = null);
+        IAsyncEnumerable<OcrBatchResult> BatchForeachAsync(List<string> imageList, string saveDir = null, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null);
+        OcrBatchResult[] BatchAsync(List<string> imageList, string saveDir = null, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null);
     }
 }

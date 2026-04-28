@@ -190,8 +190,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             int count = batchResult.DetResult.ImgCropList.Count;
             batchResult.RecResult = new RecResult[count];
 
-            MarkBatchItemCompleted(batchResult);
-
             Channel<RecPreResultBatch> channelPre = Channel.CreateBounded<RecPreResultBatch>(UtilsHelper.GetChannelOptions(_ocrConfig.BatchPoolSize));
             var producer = Task.Run(() => _recPreprocess.PreprocessBatchAsync(batchResult.DetResult.ImgCropList, _deviceType, channelPre.Writer));
 
@@ -218,9 +216,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             await foreach (RecPreResultBatch item in channelPre.Reader.ReadAllAsync())
             {
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.InputData, new long[] { 1, img_c, img_h, item.ImgWidth });
-               // Console.WriteLine($"Rec batch {item.Index}");
+
+                long start = Stopwatch.GetTimestamp();
                 var output0 = InferenceRun(inputOrtValue, null);
-                batchResult.EndTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                long end = Stopwatch.GetTimestamp();
+                batchResult.RecTimestamp = (long)((end - start) * 1000.0 / Stopwatch.Frequency); 
                 producer[idx] = BatchPostProcessAsync(output0, batchResult, item);
 
                 Interlocked.Increment(ref idx);
