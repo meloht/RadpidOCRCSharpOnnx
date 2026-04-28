@@ -61,23 +61,24 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                     ArrayPool<float>.Shared.Return(data.Data, true);
                 }
             }
-
-            using (output)
+            ResultPerf<DetResult> result = new ResultPerf<DetResult>();
+            if (output != null)
             {
-                using var ortValue = output[0];
-                var res = _detPostprocess.PostProcess(resizedImg, ortValue);
+                using (output)
+                {
+                    using var ortValue = output[0];
+                    var res = _detPostprocess.PostProcess(resizedImg, ortValue);
 
-                res.ResizeData = data.ResizeData;
-
-                ResultPerf<DetResult> result = new ResultPerf<DetResult>();
-                result.Data = res;
-                result.Perf = perf;
-                _stopwatch.Stop();
-                perf.Postprocess += _stopwatch.ElapsedMilliseconds;
-                perf.SumTotal();
-                return result;
+                    res.ResizeData = data.ResizeData;
+                    result.Data = res;
+                }
             }
-           
+
+            result.Perf = perf;
+            _stopwatch.Stop();
+            perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+            perf.SumTotal();
+            return result;
         }
 
 

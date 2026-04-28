@@ -117,19 +117,22 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                     ArrayPool<float>.Shared.Return(batchData, true);
                 }
 
-
-                using (outData)
+                if (outData != null)
                 {
-                    using var ortValue = outData[0];
-                    var res = _recPostprocess.RecPostProcess(ortValue, wh_ratio_list, max_wh_ratio, _charList);
-
-                    for (int j = 0; j < res.Length && imgIdx < imgCount; j++, imgIdx++)
+                    using (outData)
                     {
-                        rec_res[imgIdx] = res[j];
+                        using var ortValue = outData[0];
+                        var res = _recPostprocess.RecPostProcess(ortValue, wh_ratio_list, max_wh_ratio, _charList);
+
+                        for (int j = 0; j < res.Length && imgIdx < imgCount; j++, imgIdx++)
+                        {
+                            rec_res[imgIdx] = res[j];
+                        }
+                        _stopwatch.Stop();
+                        perf.Postprocess += _stopwatch.ElapsedMilliseconds;
                     }
-                    _stopwatch.Stop();
-                    perf.Postprocess += _stopwatch.ElapsedMilliseconds;
                 }
+               
             }
             perf.SumTotal();
             var resultPerf = new ResultPerf<RecResult[]>();
@@ -159,10 +162,15 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 
                 using var outData = InferenceRun(inputOrtValue, perf);
                 _stopwatch.Restart();
-
+                if (pre.InputData != null)
+                {
+                    ArrayPool<float>.Shared.Return(pre.InputData, true);
+                }
+              
                 using var ortValue = outData[0];
                 rec_res[imgIdx.Index] = _recPostprocess.RecPostProcess(ortValue, pre.WhRatio, pre.MaxWhRatio, _charList);
-
+                _stopwatch.Stop();
+                perf.Postprocess += _stopwatch.ElapsedMilliseconds;
             }
 
             perf.SumTotal();

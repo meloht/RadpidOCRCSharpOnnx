@@ -80,7 +80,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 }
                 catch (Exception)
                 {
-
                     throw;
                 }
                 finally
@@ -88,17 +87,17 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                     ArrayPool<float>.Shared.Return(batchData, true);
                 }
 
-                using (outData)
+                if (outData != null)
                 {
-                    
-                    using var ortValue = outData[0];
-                    _clsPostprocess.ClsPostProcess(ortValue, i, imgList, cls_res);
+                    using (outData)
+                    {
+                        using var ortValue = outData[0];
+                        _clsPostprocess.ClsPostProcess(ortValue, i, imgList, cls_res);
 
-                    _stopwatch.Stop();
-                    perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+                        _stopwatch.Stop();
+                        perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+                    }
                 }
-                
-
             }
             perf.SumTotal();
             var resultPerf = new ResultPerf<ClsResult[]>();
@@ -116,7 +115,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             foreach (var item in imgList)
             {
                 _stopwatch.Restart();
-                float[] batchData = new float[1 * img_c * img_h * img_w];
+                float[] batchData = ArrayPool<float>.Shared.Rent(1 * img_c * img_h * img_w);
                 _clsPreprocess.ResizeNormImg(item.Image, 0, batchData);
 
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { 1, img_c, img_h, img_w });
@@ -125,6 +124,9 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 perf.Preprocess += _stopwatch.ElapsedMilliseconds;
 
                 using var output = InferenceRun(inputOrtValue, perf);
+
+                ArrayPool<float>.Shared.Return(batchData, true);
+
                 _stopwatch.Restart();
                 using var ortValue = output[0];
                 results[item.Index] = _clsPostprocess.ClsPostProcess(ortValue, item.Image);
