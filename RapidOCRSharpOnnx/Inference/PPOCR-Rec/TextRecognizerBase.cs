@@ -66,18 +66,18 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             int img_h = _ocrConfig.RecognizerConfig.RecImgShape[1];
             int img_w = _ocrConfig.RecognizerConfig.RecImgShape[2];
 
-            for (int i = 0, imgIdx = 0; i < imgCount; i += _ocrConfig.RecognizerConfig.RecBatchNum)
+            for (int batchIndex = 0, imgIdx = 0; batchIndex < imgCount; batchIndex += _ocrConfig.RecognizerConfig.RecBatchNum)
             {
                 _stopwatch.Restart();
-                int endNo = Math.Min(imgCount, i + _ocrConfig.RecognizerConfig.RecBatchNum);
-                int batchSize = endNo - i;
+                int endNo = Math.Min(imgCount, batchIndex + _ocrConfig.RecognizerConfig.RecBatchNum);
+                int batchSize = endNo - batchIndex;
 
                 float[] wh_ratio_list = new float[batchSize];
 
                 float config_wh_ratio = (float)img_w / (float)img_h;
                 float[] max_wh_ratio_list = new float[batchSize];
                 float max_wh_ratio = config_wh_ratio;
-                for (int j = i, ratioIdx = 0; j < endNo; j++, ratioIdx++)
+                for (int j = batchIndex, ratioIdx = 0; j < endNo; j++, ratioIdx++)
                 {
                     float wh_ratio = (float)imgList[j].Image.Width / (float)imgList[j].Image.Height;
 
@@ -93,8 +93,8 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                 IDisposableReadOnlyCollection<OrtValue> outData = null;
                 try
                 {
-                    int idx = i;
-                    Parallel.For(i, endNo, _parallelOptions, j =>
+                    int idx = batchIndex;
+                    Parallel.For(batchIndex, endNo, _parallelOptions, j =>
                     {
                         int img_max_width = (int)Math.Round(img_h * max_wh_ratio_list[j - idx], 0);
                         _recPreprocess.ResizeNormImg(imgList[j].Image, j - idx, batchData, img_width, img_max_width);

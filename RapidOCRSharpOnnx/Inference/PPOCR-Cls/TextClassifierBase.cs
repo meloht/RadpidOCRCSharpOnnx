@@ -54,18 +54,18 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             int img_h = _clsImageShape[1];
             int img_w = _clsImageShape[2];
 
-            for (int i = 0; i < imgCount; i += _ocrConfig.ClassifierConfig.ClsBatchNum)
+            for (int batchIndex = 0; batchIndex < imgCount; batchIndex += _ocrConfig.ClassifierConfig.ClsBatchNum)
             {
                 _stopwatch.Restart();
-                int endNo = Math.Min(imgCount, i + _ocrConfig.ClassifierConfig.ClsBatchNum);
-                int batchSize = endNo - i;
+                int endNo = Math.Min(imgCount, batchIndex + _ocrConfig.ClassifierConfig.ClsBatchNum);
+                int batchSize = endNo - batchIndex;
                 int len = batchSize * img_c * img_h * img_w;
                 float[] batchData = ArrayPool<float>.Shared.Rent(len);
                 IDisposableReadOnlyCollection<OrtValue> outData = null;
                 try
                 {
-                    int idx = i;
-                    Parallel.For(i, endNo, _parallelOptions, j =>
+                    int idx = batchIndex;
+                    Parallel.For(batchIndex, endNo, _parallelOptions, j =>
                     {
                         _clsPreprocess.ResizeNormImg(imgList[j].Image, j - idx, batchData);
                     });
@@ -93,7 +93,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                     using (outData)
                     {
                         using var ortValue = outData[0];
-                        _clsPostprocess.ClsPostProcess(ortValue, i, imgList, cls_res);
+                        _clsPostprocess.ClsPostProcess(ortValue, batchIndex, imgList, cls_res);
 
                         _stopwatch.Stop();
                         perf.Postprocess += _stopwatch.ElapsedMilliseconds;
