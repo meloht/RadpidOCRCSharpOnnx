@@ -13,11 +13,11 @@ namespace RapidOCRSharpOnnx.ConsoleApp
         static void Main(string[] args)
         {
             var buildNumber = Environment.OSVersion.Version.Build;
-            //TestBatch();
+            TestBatch();
             //_=TestBatchForeachAsync();
             // TestListSeq();
             // TestListSeq2();
-            TestImage();
+            //TestImage();
 
             //Parallel.For(0, 100, i =>
             //{

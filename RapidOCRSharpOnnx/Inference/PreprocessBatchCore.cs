@@ -46,6 +46,16 @@ namespace RapidOCRSharpOnnx.Inference
         }
         private IEnumerable<T[]> GetPreprocessWorkersSize(IList<T> listImg, DeviceType deviceType)
         {
+            int size = GetSizeTask(listImg.Count, deviceType);
+            if (size == 0)
+            {
+                return [listImg.ToArray()];
+            }
+            return listImg.Chunk(size);
+        }
+
+        private int GetSizeTask(int count, DeviceType deviceType)
+        {
             int preprocessWorkers = Environment.ProcessorCount;
             if (deviceType == DeviceType.CPU)
             {
@@ -53,26 +63,29 @@ namespace RapidOCRSharpOnnx.Inference
             }
             else
             {
-                if (listImg.Count < Environment.ProcessorCount)
+                if (count < Environment.ProcessorCount)
                 {
                     preprocessWorkers = Environment.ProcessorCount / 2;
                 }
-                if (listImg.Count < preprocessWorkers)
+                if (count < preprocessWorkers)
                 {
-                    preprocessWorkers = 2;
+                    if (preprocessWorkers >= 2)
+                    {
+                        preprocessWorkers /= 2;
+                    }
+                    else
+                    {
+                        preprocessWorkers = 2;
+                    }
                 }
-            }
-            int size = listImg.Count / preprocessWorkers;
 
+            }
+            int size = count / preprocessWorkers;
             if (size < 1)
             {
-                size = listImg.Count;
+                size = count;
             }
-            if (size == 0)
-            {
-                return [listImg.ToArray()];
-            }
-            return listImg.Chunk(size);
+            return size;
         }
 
         protected unsafe void ConvertToNormImg(int resized_w, int index, int img_c, int img_h, int img_w, Mat resized, float[] inputData)
