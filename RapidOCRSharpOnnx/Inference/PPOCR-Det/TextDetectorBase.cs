@@ -8,6 +8,7 @@ using RapidOCRSharpOnnx.Models;
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Channels;
@@ -35,25 +36,48 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             _stopwatch.Restart();
             using Mat resizedImg = image.Clone();
             var data = _detPreprocess.Preprocess(image, resizedImg);
-            using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(data.Data, data.Dimensions);
-            _stopwatch.Stop();
-            perf.Preprocess += _stopwatch.ElapsedMilliseconds;
+            IDisposableReadOnlyCollection<OrtValue> output = null;
+            try
+            {
+                using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(data.Data, data.Dimensions);
+                _stopwatch.Stop();
+                perf.Preprocess += _stopwatch.ElapsedMilliseconds;
 
-            using var output0 = InferenceRun(inputOrtValue, perf);
-            using var ortValue = output0[0];
+                output = InferenceRun(inputOrtValue, perf);
+               
 
-            _stopwatch.Restart();
-            var res = _detPostprocess.PostProcess(resizedImg, ortValue);
+                ArrayPool<float>.Shared.Return(data.Data, true);
+                _stopwatch.Restart();
+            }
+            catch (Exception)
+            {
 
-            res.ResizeData = data.ResizeData;
+                throw;
+            }
+            finally
+            {
+                if(data.Data != null)
+                {
+                    ArrayPool<float>.Shared.Return(data.Data, true);
+                }
+            }
 
-            ResultPerf<DetResult> result = new ResultPerf<DetResult>();
-            result.Data = res;
-            result.Perf = perf;
-            _stopwatch.Stop();
-            perf.Postprocess += _stopwatch.ElapsedMilliseconds;
-            perf.SumTotal();
-            return result;
+            using (output)
+            {
+                using var ortValue = output[0];
+                var res = _detPostprocess.PostProcess(resizedImg, ortValue);
+
+                res.ResizeData = data.ResizeData;
+
+                ResultPerf<DetResult> result = new ResultPerf<DetResult>();
+                result.Data = res;
+                result.Perf = perf;
+                _stopwatch.Stop();
+                perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+                perf.SumTotal();
+                return result;
+            }
+           
         }
 
 

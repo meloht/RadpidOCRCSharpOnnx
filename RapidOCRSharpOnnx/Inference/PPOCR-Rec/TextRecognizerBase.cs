@@ -10,6 +10,7 @@ using RapidOCRSharpOnnx.Models;
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -87,32 +88,48 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                 int img_width = (int)Math.Round(img_h * max_wh_ratio, 0);
                 int tensorLength = img_c * img_h * img_width * batchSize;
 
-                float[] batchData = new float[tensorLength];
-
-                for (int j = i, ratioIdx = 0; j < endNo; j++, ratioIdx++)
+                float[] batchData = ArrayPool<float>.Shared.Rent(tensorLength);
+                IDisposableReadOnlyCollection<OrtValue> outData = null;
+                try
                 {
-                    int img_max_width = (int)Math.Round(img_h * max_wh_ratio_list[ratioIdx], 0);
-                    _recPreprocess.ResizeNormImg(imgList[j].Image, ratioIdx, batchData, img_width, img_max_width);
+                    int idx = i;
+                    Parallel.For(i, endNo, _parallelOptions, j =>
+                    {
+                        int img_max_width = (int)Math.Round(img_h * max_wh_ratio_list[j - idx], 0);
+                        _recPreprocess.ResizeNormImg(imgList[j].Image, j - idx, batchData, img_width, img_max_width);
+                    });
+
+                    using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_width });
+
+                    _stopwatch.Stop();
+                    perf.Preprocess += _stopwatch.ElapsedMilliseconds;
+
+                    outData = InferenceRun(inputOrtValue, perf);
+                    _stopwatch.Restart();
+
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+                finally
+                {
+                    ArrayPool<float>.Shared.Return(batchData, true);
                 }
 
-                using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_width });
 
-                _stopwatch.Stop();
-                perf.Preprocess += _stopwatch.ElapsedMilliseconds;
-
-                using var outData = InferenceRun(inputOrtValue, perf);
-                _stopwatch.Restart();
-
-                using var ortValue = outData[0];
-                var res = _recPostprocess.RecPostProcess(ortValue, wh_ratio_list, max_wh_ratio, _charList);
-
-                for (int j = 0; j < res.Length && imgIdx < imgCount; j++, imgIdx++)
+                using (outData)
                 {
-                    rec_res[imgIdx] = res[j];
-                }
+                    using var ortValue = outData[0];
+                    var res = _recPostprocess.RecPostProcess(ortValue, wh_ratio_list, max_wh_ratio, _charList);
 
-                _stopwatch.Stop();
-                perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+                    for (int j = 0; j < res.Length && imgIdx < imgCount; j++, imgIdx++)
+                    {
+                        rec_res[imgIdx] = res[j];
+                    }
+                    _stopwatch.Stop();
+                    perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+                }
             }
             perf.SumTotal();
             var resultPerf = new ResultPerf<RecResult[]>();

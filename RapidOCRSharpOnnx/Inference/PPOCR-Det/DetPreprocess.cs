@@ -4,6 +4,7 @@ using RapidOCRSharpOnnx.Inference.PPOCR_Det.Models;
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -70,7 +71,9 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
             using Mat resizedImg = new Mat();
             Resize(image, resizedImg, limitSideLen);
-            float[] inputData = new float[resizedImg.Height * resizedImg.Width * 3];
+            //float[] inputData = new float[resizedImg.Height * resizedImg.Width * 3];
+            int len = resizedImg.Height * resizedImg.Width * 3;
+            float[] inputData = ArrayPool<float>.Shared.Rent(len);
             //NormalizeAndPermute(resizedImg, inputData);
 
             if (Avx2.IsSupported)
@@ -457,7 +460,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 BorderTypes.Constant,
                 _paddingColor // 黑色填充，根据图像通道数自动适应
             );
-   
+
         }
 
     }

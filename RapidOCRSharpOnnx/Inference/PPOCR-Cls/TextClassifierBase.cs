@@ -9,6 +9,7 @@ using RapidOCRSharpOnnx.Models;
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -57,27 +58,46 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 _stopwatch.Restart();
                 int endNo = Math.Min(imgCount, i + _ocrConfig.ClassifierConfig.ClsBatchNum);
                 int batchSize = endNo - i;
-                float[] batchData = new float[batchSize * img_c * img_h * img_w];
-
-                for (int j = i, idx1 = 0; j < endNo; j++, idx1++)
+                int len = batchSize * img_c * img_h * img_w;
+                float[] batchData = ArrayPool<float>.Shared.Rent(len);
+                IDisposableReadOnlyCollection<OrtValue> outData = null;
+                try
                 {
-                    _clsPreprocess.ResizeNormImg(imgList[j].Image, idx1, batchData);
+                    int idx = i;
+                    Parallel.For(i, endNo, _parallelOptions, j =>
+                    {
+                        _clsPreprocess.ResizeNormImg(imgList[j].Image, j - idx, batchData);
+                    });
+
+                    using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_w });
+
+                    _stopwatch.Stop();
+                    perf.Preprocess += _stopwatch.ElapsedMilliseconds;
+
+                    outData = InferenceRun(inputOrtValue, perf);
+
+                    _stopwatch.Restart();
+                }
+                catch (Exception)
+                {
+
+                    throw;
+                }
+                finally
+                {
+                    ArrayPool<float>.Shared.Return(batchData, true);
                 }
 
-                using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { batchSize, img_c, img_h, img_w });
+                using (outData)
+                {
+                    
+                    using var ortValue = outData[0];
+                    _clsPostprocess.ClsPostProcess(ortValue, i, imgList, cls_res);
 
-                _stopwatch.Stop();
-                perf.Preprocess += _stopwatch.ElapsedMilliseconds;
-
-
-                using var output = InferenceRun(inputOrtValue, perf);
-
-                _stopwatch.Restart();
-                using var ortValue = output[0];
-                _clsPostprocess.ClsPostProcess(ortValue, i, imgList, cls_res);
-
-                _stopwatch.Stop();
-                perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+                    _stopwatch.Stop();
+                    perf.Postprocess += _stopwatch.ElapsedMilliseconds;
+                }
+                
 
             }
             perf.SumTotal();

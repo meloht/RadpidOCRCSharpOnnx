@@ -18,6 +18,7 @@ namespace RapidOCRSharpOnnx.Inference
         protected Stopwatch _stopwatch;
         protected readonly DeviceType _deviceType;
         protected OcrConfig _ocrConfig;
+        protected ParallelOptions _parallelOptions;
         protected abstract IDisposableReadOnlyCollection<OrtValue> InferenceRun(OrtValue inputOrtValue, PerfModel perf);
 
         public OnnxInferenceCore(InferenceSession session, SessionOptions options, OcrConfig ocrConfig, DeviceType deviceType)
@@ -28,11 +29,16 @@ namespace RapidOCRSharpOnnx.Inference
             _options = options;
             _deviceType = deviceType;
             _ocrConfig = ocrConfig;
+
+            _parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount / 2
+            };
         }
 
         protected IDisposableReadOnlyCollection<OrtValue> InferenceRunCore(OrtValue inputOrtValue, OrtIoBinding binding, PerfModel perf)
         {
-            if(perf == null)
+            if (perf == null)
             {
                 return InferenceRunCore(inputOrtValue, binding);
             }
@@ -57,9 +63,9 @@ namespace RapidOCRSharpOnnx.Inference
 
         protected IDisposableReadOnlyCollection<OrtValue> InferenceRunCore(OrtValue inputOrtValue, PerfModel perf)
         {
-            if(perf == null)
+            if (perf == null)
             {
-                return _session.Run(_runOptions, _session.InputNames, [inputOrtValue], _session.OutputNames); 
+                return _session.Run(_runOptions, _session.InputNames, [inputOrtValue], _session.OutputNames);
             }
             _stopwatch.Restart();
             var res = _session.Run(_runOptions, _session.InputNames, [inputOrtValue], _session.OutputNames);
