@@ -11,6 +11,7 @@ using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -202,38 +203,32 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
 
         private async Task ForeachReadAsync(Channel<RecPreResultBatch> channelPre, OcrBatchResult batchResult)
         {
-
             int img_c = _ocrConfig.RecognizerConfig.RecImgShape[0];
             int img_h = _ocrConfig.RecognizerConfig.RecImgShape[1];
-
+            ConcurrentBag<Task> tasks = new ConcurrentBag<Task>();
             await foreach (RecPreResultBatch item in channelPre.Reader.ReadAllAsync())
             {
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.InputData, new long[] { 1, img_c, img_h, item.ImgWidth });
                 Console.WriteLine($"Rec batch {item.Index}");
                 var output0 = InferenceRun(inputOrtValue, null);
-                // await BatchPostProcessAsync(output0, item.BatchResult, item.WhRatio, item.MaxWhRatio, idx);
 
-                using (output0)
-                {
-                    using var ortValue = output0[0];
-                    batchResult.RecResult[item.Index] = _recPostprocess.RecPostProcess(ortValue, item.WhRatio, item.MaxWhRatio, _charList);
-
-                    Console.WriteLine($"Rec RecPostProcess {item.Index}");
-                }
-
+                var task= BatchPostProcessAsync(output0, batchResult, item);
+                tasks.Add(task);
             }
+            await Task.WhenAll(tasks);
         }
 
-        private async Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, OcrBatchResult item, float wh_ratio, float max_wh_ratio, int index)
+        private Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, OcrBatchResult batchResult, RecPreResultBatch item)
         {
-            await Task.Run(async () =>
+            return Task.Run(async () =>
             {
+                ArrayPool<float>.Shared.Return(item.InputData, true);
                 using (output)
                 {
                     using var ortValue = output[0];
-                    item.RecResult[index] = _recPostprocess.RecPostProcess(ortValue, wh_ratio, max_wh_ratio, _charList);
+                    batchResult.RecResult[item.Index] = _recPostprocess.RecPostProcess(ortValue, item.WhRatio, item.MaxWhRatio, _charList);
 
-                    Console.WriteLine($"Rec RecPostProcess {index}");
+                    Console.WriteLine($"Rec RecPostProcess {item.Index}");
                 }
             });
 

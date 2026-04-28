@@ -10,6 +10,7 @@ using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.Utils;
 using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -112,10 +113,11 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             int img_c = _clsImageShape[0];
             int img_h = _clsImageShape[1];
             int img_w = _clsImageShape[2];
+            int len = 1 * img_c * img_h * img_w;
             foreach (var item in imgList)
             {
                 _stopwatch.Restart();
-                float[] batchData = ArrayPool<float>.Shared.Rent(1 * img_c * img_h * img_w);
+                float[] batchData = ArrayPool<float>.Shared.Rent(len);
                 _clsPreprocess.ResizeNormImg(item.Image, 0, batchData);
 
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(batchData, new long[] { 1, img_c, img_h, img_w });
@@ -149,6 +151,10 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             int count = batchResult.DetResult.ImgCropList.Count;
             batchResult.ClsResult = new ClsResult[count];
             Channel<ClsPreResultBatch> channelPre = Channel.CreateBounded<ClsPreResultBatch>(UtilsHelper.GetChannelOptions(_ocrConfig.BatchPoolSize));
+            int img_c = _clsImageShape[0];
+            int img_h = _clsImageShape[1];
+            int img_w = _clsImageShape[2];
+            int len = 1 * img_c * img_h * img_w;
             var producer = Task.Run(() => _clsPreprocess.PreprocessBatchAsync(batchResult.DetResult.ImgCropList, _deviceType, channelPre.Writer));
 
             var consumer = WriteRecAsync(batchResult, channelPre, recChannelWriter);
@@ -162,32 +168,33 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             int img_c = _clsImageShape[0];
             int img_h = _clsImageShape[1];
             int img_w = _clsImageShape[2];
-
+            ConcurrentBag<Task> tasks = new ConcurrentBag<Task>();
             await foreach (ClsPreResultBatch item in channelPre.Reader.ReadAllAsync())
             {
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.InputData, new long[] { 1, img_c, img_h, img_w });
                 Console.WriteLine($"{DateTime.Now} Cls batch {item.ImageIndex.Index}");
                 var output0 = InferenceRun(inputOrtValue, null);
-                //await BatchPostProcessAsync(output0, item.BatchResult, item.img, idx, recChannelWriter);
 
-                using var ortValue = output0[0];
-                batchResult.ClsResult[item.ImageIndex.Index] = _clsPostprocess.ClsPostProcess(ortValue, item.ImageIndex.Image);
-                Console.WriteLine($"{DateTime.Now} Cls batch Write {item.ImageIndex.Index}");
+                var task = BatchPostProcessAsync(output0, batchResult, item);
+                tasks.Add(task);
+
             }
+            await Task.WhenAll(tasks);
             await recChannelWriter.WriteAsync(batchResult);
 
         }
 
-        private async Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, OcrBatchResult item, Mat img, int index, ChannelWriter<OcrBatchResult> writer)
+        private Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, OcrBatchResult batchResult, ClsPreResultBatch item)
         {
-            await Task.Run(async () =>
+            return Task.Run(async () =>
             {
+                ArrayPool<float>.Shared.Return(item.InputData);
                 using (output)
                 {
                     using var ortValue = output[0];
-                    item.ClsResult[index] = _clsPostprocess.ClsPostProcess(ortValue, img);
-                    Console.WriteLine($"Cls batch Write {index}");
-                    await writer.WriteAsync(item);
+                    batchResult.ClsResult[item.ImageIndex.Index] = _clsPostprocess.ClsPostProcess(ortValue, item.ImageIndex.Image);
+                    Console.WriteLine($"Cls batch Write {item.ImageIndex.Index}");
+
                 }
             });
         }

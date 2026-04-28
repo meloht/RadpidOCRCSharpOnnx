@@ -96,7 +96,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
 
             Task.WaitAll(producer, consumer);
 
-           
+
         }
         private async Task WriteNextAsync(Channel<DetPreResultBatch> channelDet, OcrBatchResult[] batchResults, ChannelWriter<OcrBatchResult> nextChannelWriter)
         {
@@ -107,18 +107,19 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.PreResult.Data, item.PreResult.Dimensions);
                 Console.WriteLine($"Detect batch {item.ImagePathIndex.Index}");
                 var output0 = InferenceRun(inputOrtValue, null);
-
-                var task = BatchPostProcessAsync(output0, item, batchResults[item.ImagePathIndex.Index], item.ImagePathIndex.Index, nextChannelWriter);
+               
+                var task = BatchPostProcessAsync(output0, item, batchResults[item.ImagePathIndex.Index], nextChannelWriter);
                 tasks.Add(task);
             }
 
             await Task.WhenAll(tasks).ContinueWith(t => nextChannelWriter.Complete());
         }
 
-        private async Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, DetPreResultBatch item, OcrBatchResult batchResult, int idx, ChannelWriter<OcrBatchResult> writer)
+        private Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, DetPreResultBatch item, OcrBatchResult batchResult, ChannelWriter<OcrBatchResult> writer)
         {
-            await Task.Run(async () =>
+            return Task.Run(async () =>
              {
+                 ArrayPool<float>.Shared.Return(item.PreResult.Data, true);
                  using (output)
                  using (item.ResizedImg)
                  {
@@ -126,7 +127,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                      var res = _detPostprocess.PostProcess(item.ResizedImg, ortValue);
                      res.ResizeData = item.PreResult.ResizeData;
                      batchResult.DetResult = res;
-                     Console.WriteLine($"Detect batch WriteAsync {idx} image count({res.ImgCropList.Count})");
+                     Console.WriteLine($"Detect batch WriteAsync {item.ImagePathIndex.Index} image count({res.ImgCropList.Count})");
                      await writer.WriteAsync(batchResult);
                  }
              });

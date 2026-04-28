@@ -103,8 +103,8 @@ namespace RapidOCRSharpOnnx.ConsoleApp
             //string detectPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv4_det_mobile.onnx";
             //string recogPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv4_rec_mobile.onnx";
             //string clsPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_ppocr_mobile_v2.0_cls_mobile.onnx";
-            //string saveDir = @"D:\code\model\OCRTestImagesResults";
-            string saveDir = null;
+            string saveDir = @"D:\code\model\OCRTestImagesResults";
+            //string saveDir = null;
             string detectPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_det_mobile.onnx";
             string recogPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_rec_mobile.onnx";
             string clsPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx";
@@ -119,6 +119,7 @@ namespace RapidOCRSharpOnnx.ConsoleApp
             foreach (var item in resPath)
             {
                 Console.WriteLine(item.TextBlocks);
+                Console.WriteLine("------------------------------------------------------------");
             }
 
             Console.WriteLine("end");
