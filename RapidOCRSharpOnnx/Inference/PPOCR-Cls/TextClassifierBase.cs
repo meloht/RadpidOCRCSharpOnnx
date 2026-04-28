@@ -220,7 +220,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
             int idx = 0;
             await foreach (ClsPreResultBatch item in channelPre.Reader.ReadAllAsync())
             {
-                Console.WriteLine($"{DateTime.Now} Cls batch {item.ImageIndex.Index}");
+                //Console.WriteLine($"{DateTime.Now} Cls batch {item.ImageIndex.Index}");
                 var output0 = InferenceRun(item.InputData.InputOrtValue, null);
                 _matPool.Return(item.InputData);
                 producer[idx] = BatchPostProcessAsync(output0, batchResult, item);
@@ -239,7 +239,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Cls
                 {
                     using var ortValue = output[0];
                     batchResult.ClsResult[item.ImageIndex.Index] = _clsPostprocess.ClsPostProcess(ortValue, item.ImageIndex.Image);
-                    Console.WriteLine($"Cls batch Write {item.ImageIndex.Index}");
+                   // Console.WriteLine($"Cls batch Write {item.ImageIndex.Index}");
 
                 }
             });

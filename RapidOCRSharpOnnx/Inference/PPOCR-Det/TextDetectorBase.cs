@@ -106,7 +106,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             await foreach (DetPreResultBatch item in channelDet.Reader.ReadAllAsync())
             {
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.PreResult.Data, item.PreResult.Dimensions);
-                Console.WriteLine($"Detect batch {item.ImagePathIndex.Index}");
+                //Console.WriteLine($"Detect batch {item.ImagePathIndex.Index}");
                 var output0 = InferenceRun(inputOrtValue, null);
 
                 producer[idx] = BatchPostProcessAsync(output0, item, batchResults[item.ImagePathIndex.Index], nextChannelWriter);
@@ -128,7 +128,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                      var res = _detPostprocess.PostProcess(item.ResizedImg, ortValue);
                      res.ResizeData = item.PreResult.ResizeData;
                      batchResult.DetResult = res;
-                     Console.WriteLine($"Detect batch WriteAsync {item.ImagePathIndex.Index} image count({res.ImgCropList.Count})");
+                    // Console.WriteLine($"Detect batch WriteAsync {item.ImagePathIndex.Index} image count({res.ImgCropList.Count})");
                      await writer.WriteAsync(batchResult);
                  }
              });

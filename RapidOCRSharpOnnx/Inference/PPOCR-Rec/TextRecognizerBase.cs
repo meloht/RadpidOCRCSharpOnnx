@@ -216,7 +216,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
             await foreach (RecPreResultBatch item in channelPre.Reader.ReadAllAsync())
             {
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.InputData, new long[] { 1, img_c, img_h, item.ImgWidth });
-                Console.WriteLine($"Rec batch {item.Index}");
+               // Console.WriteLine($"Rec batch {item.Index}");
                 var output0 = InferenceRun(inputOrtValue, null);
 
                 producer[idx] = BatchPostProcessAsync(output0, batchResult, item);
@@ -236,7 +236,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                     using var ortValue = output[0];
                     batchResult.RecResult[item.Index] = _recPostprocess.RecPostProcess(ortValue, item.WhRatio, item.MaxWhRatio, _charList);
 
-                    Console.WriteLine($"Rec RecPostProcess {item.Index}");
+                   // Console.WriteLine($"Rec RecPostProcess {item.Index}");
                 }
             });
 
