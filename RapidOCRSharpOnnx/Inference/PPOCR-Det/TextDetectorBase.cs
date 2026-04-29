@@ -11,6 +11,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 
@@ -82,7 +83,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         }
 
 
-        public void BatchDetectAsync(List<string> listImg, ChannelWriter<OcrBatchResult> nextChannelWriter, OcrBatchResult[] batchResults)
+        public async Task BatchDetectAsync(List<string> listImg, ChannelWriter<OcrBatchResult> nextChannelWriter, OcrBatchResult[] batchResults)
         {
             List<ImagePathIndex> listPath = new List<ImagePathIndex>();
             for (int i = 0; i < listImg.Count; i++)
@@ -90,31 +91,32 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                 listPath.Add(new ImagePathIndex(listImg[i], i));
             }
             Channel<DetPreResultBatch> channelDet = Channel.CreateBounded<DetPreResultBatch>(UtilsHelper.GetChannelOptions(_ocrConfig.BatchPoolSize));
-            var producer = Task.Run(() => _detPreprocess.PreprocessBatchAsync(listPath, _deviceType, channelDet.Writer));
+            var producer = Task.Run(async () => await _detPreprocess.PreprocessBatchAsync(listPath, _deviceType, channelDet.Writer));
 
             var consumer = WriteNextAsync(channelDet, batchResults, nextChannelWriter);
 
-            Task.WaitAll(producer, consumer);
+            await Task.WhenAll(producer, consumer);
 
 
         }
         private async Task WriteNextAsync(Channel<DetPreResultBatch> channelDet, OcrBatchResult[] batchResults, ChannelWriter<OcrBatchResult> nextChannelWriter)
         {
-
-            Task[] producer = new Task[batchResults.Length];
-            int idx = 0;
+            ConcurrentBag<Task> tasks = new ConcurrentBag<Task>();
             await foreach (DetPreResultBatch item in channelDet.Reader.ReadAllAsync())
             {
                 using var inputOrtValue = OrtValue.CreateTensorValueFromMemory(item.PreResult.Data, item.PreResult.Dimensions);
-                //Console.WriteLine($"Detect batch {item.ImagePathIndex.Index}");
-                batchResults[item.ImagePathIndex.Index].StartTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                var output0 = InferenceRun(inputOrtValue, null);
 
-                producer[idx] = BatchPostProcessAsync(output0, item, batchResults[item.ImagePathIndex.Index], nextChannelWriter);
-                Interlocked.Increment(ref idx);
+                long start = Stopwatch.GetTimestamp();
+
+                var output0 = InferenceRun(inputOrtValue);
+                long end = Stopwatch.GetTimestamp();
+                batchResults[item.ImagePathIndex.Index].DetTimestamp = (long)((end - start) * 1000.0 / Stopwatch.Frequency);
+
+                var task = BatchPostProcessAsync(output0, item, batchResults[item.ImagePathIndex.Index], nextChannelWriter);
+                tasks.Add(task);
             }
 
-            await Task.WhenAll(producer).ContinueWith(t => nextChannelWriter.Complete());
+            await Task.WhenAll(tasks).ContinueWith(t => nextChannelWriter.Complete());
         }
 
         private Task BatchPostProcessAsync(IDisposableReadOnlyCollection<OrtValue> output, DetPreResultBatch item, OcrBatchResult batchResult, ChannelWriter<OcrBatchResult> writer)
@@ -129,7 +131,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
                      var res = _detPostprocess.PostProcess(item.ResizedImg, ortValue);
                      res.ResizeData = item.PreResult.ResizeData;
                      batchResult.DetResult = res;
-                     // Console.WriteLine($"Detect batch WriteAsync {item.ImagePathIndex.Index} image count({res.ImgCropList.Count})");
+                     Console.WriteLine($"Detect batch WriteAsync {item.ImagePathIndex.Index} image count({res.ImgCropList.Count})");
                      await writer.WriteAsync(batchResult);
                  }
              });

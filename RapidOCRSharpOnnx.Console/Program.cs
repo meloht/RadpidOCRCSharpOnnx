@@ -13,9 +13,10 @@ namespace RapidOCRSharpOnnx.ConsoleApp
         static void Main(string[] args)
         {
             var buildNumber = Environment.OSVersion.Version.Build;
-            TestBatch();
+            TestParallelBatch();
+            //TestBatch();
             //_=TestBatchForeachAsync();
-            // TestListSeq();
+            //TestListSeq();
             // TestListSeq2();
             //TestImage();
 
@@ -25,7 +26,7 @@ namespace RapidOCRSharpOnnx.ConsoleApp
             //});
             Console.WriteLine("123");
             Console.ReadKey();
-           
+
         }
 
         private static void TestImage()
@@ -52,8 +53,8 @@ namespace RapidOCRSharpOnnx.ConsoleApp
             string detectPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_det_mobile.onnx";
             string recogPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_rec_mobile.onnx";
             string clsPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx";
-           // string saveDir = @"D:\code\model\OCRTestImagesResults";
-           // string saveDir = null;
+            string saveDir = @"D:\code\model\OCRTestImagesResults";
+            // string saveDir = null;
             using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderDirectML(new OcrConfig(detectPath, recogPath, LangRec.CH, OCRVersion.PPOCRV5, clsPath), _deviceId));
             var list = Directory.GetFiles(@"D:\code\model\OCRTestImages");
             Stopwatch sw = new Stopwatch();
@@ -61,13 +62,14 @@ namespace RapidOCRSharpOnnx.ConsoleApp
 
             foreach (var item in list)
             {
-                var res = ocr.RecognizeText(item);
+                string resPath = Path.Combine(saveDir, $"res_{Path.GetFileName(item)}");
+                var res = ocr.RecognizeText(item, resPath);
                 Console.WriteLine(res);
             }
-           
+
             sw.Stop();
             Console.WriteLine($"BatchAsync Time: {sw.ElapsedMilliseconds} ms");
-          
+
 
             Console.WriteLine("end");
         }
@@ -111,19 +113,46 @@ namespace RapidOCRSharpOnnx.ConsoleApp
 
             using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderDirectML(new OcrConfig(detectPath, recogPath, LangRec.CH, OCRVersion.PPOCRV5, clsPath), _deviceId));
             var list = Directory.GetFiles(@"D:\code\model\OCRTestImages");
-            Stopwatch sw= new Stopwatch();
+            Stopwatch sw = new Stopwatch();
             sw.Start();
-            var resPath = ocr.BatchAsync(list.ToList(), saveDir);
+            var resPath = ocr.BatchAsync(list.ToList(), saveDir, receiveAction: ReceiveResult);
             sw.Stop();
             Console.WriteLine($"BatchAsync Time: {sw.ElapsedMilliseconds} ms");
-            foreach (var item in resPath)
-            {
-                Console.WriteLine(item.ToString());
-                Console.WriteLine("------------------------------------------------------------");
-            }
+
 
             Console.WriteLine("end");
         }
+
+        private static void TestParallelBatch()
+        {
+
+            //string detectPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv4_det_mobile.onnx";
+            //string recogPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv4_rec_mobile.onnx";
+            //string clsPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_ppocr_mobile_v2.0_cls_mobile.onnx";
+            string saveDir = @"D:\code\model\OCRTestImagesResults";
+            //string saveDir = null;
+            string detectPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_det_mobile.onnx";
+            string recogPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-OCRv5_rec_mobile.onnx";
+            string clsPath = @"D:\code\RapidOCR-3.8.0\python\rapidocr\models\ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx";
+
+            using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderDirectML(new OcrConfig(detectPath, recogPath, LangRec.CH, OCRVersion.PPOCRV5, clsPath), _deviceId));
+            var list = Directory.GetFiles(@"D:\code\model\OCRTestImages");
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            var resPath = ocr.BatchParallelAsync(list.ToList(), saveDir, receiveAction: ReceiveResult);
+            sw.Stop();
+            Console.WriteLine($"BatchAsync Time: {sw.ElapsedMilliseconds} ms");
+
+
+            Console.WriteLine("end");
+        }
+
+        private static void ReceiveResult(OcrBatchResult batchResult)
+        {
+            Console.WriteLine(batchResult.ToString());
+            Console.WriteLine("------------------------------------------------------------");
+        }
+
 
 
         private static async Task TestBatchForeachAsync()

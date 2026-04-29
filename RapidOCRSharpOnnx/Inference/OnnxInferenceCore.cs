@@ -19,7 +19,7 @@ namespace RapidOCRSharpOnnx.Inference
         protected readonly DeviceType _deviceType;
         protected OcrConfig _ocrConfig;
         protected ParallelOptions _parallelOptions;
-        protected abstract IDisposableReadOnlyCollection<OrtValue> InferenceRun(OrtValue inputOrtValue, PerfModel perf);
+        protected abstract IDisposableReadOnlyCollection<OrtValue> InferenceRun(OrtValue inputOrtValue, PerfModel perf = null);
 
         public OnnxInferenceCore(InferenceSession session, SessionOptions options, OcrConfig ocrConfig, DeviceType deviceType)
         {
@@ -76,13 +76,7 @@ namespace RapidOCRSharpOnnx.Inference
         }
 
 
-        protected void MarkBatchItemCompleted(OcrBatchResult batchResult)
-        {
-            if (batchResult.DetResult.ImgCropList.Count == 0)
-            {
-                batchResult.EndTimestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            }
-        }
+
 
         public void DisposeBase()
         {
