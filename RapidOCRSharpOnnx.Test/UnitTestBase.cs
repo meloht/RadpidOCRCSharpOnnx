@@ -10,12 +10,15 @@ namespace RapidOCRSharpOnnx.Test
         protected const string clsModelMobileName = "ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx";
         protected const string clsModelServerName = "ch_PP-LCNet_x1_0_textline_ori_cls_server.onnx";
         protected const string recModelName = "ch_PP-OCRv5_rec_mobile.onnx";
-        protected const string txtpng = "txt.png";
-        protected const string headerTextpng = "en.png";
-        protected const string testClspng = "test_cls.png";
+        protected const string png_txt = "txt.png";
+        protected const string png_en = "en_txt.png";
+        protected const string png_testClspng = "test_cls.png";
+        protected const string png_textVerticalWords = "text_vertical_words.png";
 
-        protected const string txtRes = "Let's start collaborating Select a chat or channel from the list to get started.";
-        protected const string headerTextRes = "Project=378 Dragonfly Printer=139 DRA-MP-20P5 Page=45285 (1/1) Pattern=HPGHOST_A4.pclm Crg_TK [DRA-MP-20P5-35] Page=5 Formatter/Alt Firmware [DA0iCA2513BR] Page=7620 Engine DCc Firmware [00000] Page=45285 Date=04/04/25 Time=09:13:11 Input Tray=Tray 1 Test Name=PQsuite Dragonfly_Mp Plex Mode=Simplex Media=3051 A4-80g-Blue M&G Multipurpose Paper Temp=15.0 Humidity=10.0 Fuser Mode-Plain";
+        protected const string Res_txt = "Let's start collaborating Select a chat or channel from the list to get started.";
+        protected const string Res_en = "She walks in beauty, like the night Of  cloudless climes and starry skies; And all that's best of dark and bright Meet in her aspect and l her eyes; Thus mellowed to that tender light Which heaven to gaudy day denies.";
+        protected const string Res_testCls = "我 ";
+        protected const string Res_textVerticalWords = "已取之時不參一人 是非不得間之人要取之 有評是是非非之士師也 見 而";
 
         protected string detectPath;
         protected string clsMobilePath;

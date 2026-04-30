@@ -147,7 +147,7 @@ namespace RapidOCRSharpOnnx.Inference
                 {
                     detResult.Data.DetItems[i].Word = recResults.Data[i].Label;
                 }
-                result.TextBlocks = string.Join(" ", recResults.Data.Select(r => r.Label));
+                result.TextBlocks = UtilsHelper.BuildTextBlocks(recResults.Data, _ocrConfig.RecognizerConfig.TextScore);
 
                 if (!string.IsNullOrEmpty(savePath))
                 {
@@ -182,7 +182,7 @@ namespace RapidOCRSharpOnnx.Inference
                 {
                     detResult.Data.DetItems[i].Word = recResults.Data[i].Label;
                 }
-                result.TextBlocks = string.Join(" ", recResults.Data.Select(r => r.Label));
+                result.TextBlocks = UtilsHelper.BuildTextBlocks(recResults.Data, _ocrConfig.RecognizerConfig.TextScore);
 
                 if (!string.IsNullOrEmpty(savePath))
                 {

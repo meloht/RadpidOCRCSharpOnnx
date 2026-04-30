@@ -200,7 +200,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                 {
                     batchResult.DetResult.DetItems[i].Word = batchResult.RecResult[i].Label;
                 }
-                batchResult.TextBlocks = string.Join(" ", batchResult.RecResult.Select(r => r.Label));
+                batchResult.TextBlocks = UtilsHelper.BuildTextBlocks(batchResult.RecResult, _ocrConfig.RecognizerConfig.TextScore);
             });
         }
         private async Task WriteRecAsync(OcrBatchResult batchResult, Channel<RecPreResultBatchParallel> channelPre)
@@ -256,7 +256,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Rec
                 {
                     batchResult.DetResult.DetItems[i].Word = batchResult.RecResult[i].Label;
                 }
-                batchResult.TextBlocks = string.Join(" ", batchResult.RecResult.Select(r => r.Label));
+                batchResult.TextBlocks = UtilsHelper.BuildTextBlocks(batchResult.RecResult, _ocrConfig.RecognizerConfig.TextScore);
             });
         }
 

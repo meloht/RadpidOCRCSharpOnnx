@@ -23,17 +23,25 @@ namespace RapidOCRSharpOnnx.Test
         [Fact]
         public void Test01()
         {
-            var res = _ocr.RecognizeText(GetFullPath(txtpng));
+            var res = _ocr.RecognizeText(GetFullPath(png_txt));
             Assert.NotNull(res.TextBlocks);
-            Assert.Equal(txtRes, res.TextBlocks);
+            Assert.Equal(Res_txt, res.TextBlocks);
         }
 
         [Fact]
         public void Test02()
         {
-            var res = _ocr.RecognizeText(GetFullPath(headerTextpng));
+            var res = _ocr.RecognizeText(GetFullPath(png_en));
             Assert.NotNull(res.TextBlocks);
-            Assert.Equal(txtRes, res.TextBlocks);
+            Assert.Equal(Res_en, res.TextBlocks);
+        }
+
+        [Fact]
+        public void Test03()
+        {
+            var res = _ocr.RecognizeText(GetFullPath(png_testClspng));
+            Assert.NotNull(res.TextBlocks);
+            Assert.Equal(Res_testCls, res.TextBlocks);
         }
     }
 }

@@ -21,7 +21,6 @@ namespace RapidOCRSharpOnnx.Utils
         private readonly SKTypeface _typeface;
         private readonly Random _rand = new Random(0);
 
-        public float TextScore = 0.4f;
         private readonly TextCalRecBox _textCalRecBox;
         private readonly OcrConfig _ocrConfig;
 
@@ -117,7 +116,7 @@ namespace RapidOCRSharpOnnx.Utils
 
             foreach (var item in items)
             {
-                if (item.Score < TextScore)
+                if (item.Score < _ocrConfig.RecognizerConfig.TextScore)
                     continue;
 
                 var box = item.Box;
@@ -198,7 +197,7 @@ namespace RapidOCRSharpOnnx.Utils
             }
             else
             {
-                font.Size = FitTextSizeBinary(font, boxH * 0.9f);
+                font.Size = FitTextSizeBinary(font, boxH * 0.88f);
             }
 
             return font;
