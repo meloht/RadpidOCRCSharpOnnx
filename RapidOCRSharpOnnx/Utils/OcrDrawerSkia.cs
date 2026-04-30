@@ -21,7 +21,6 @@ namespace RapidOCRSharpOnnx.Utils
         private readonly SKTypeface _typeface;
         private readonly Random _rand = new Random(0);
 
-        public float TextScore = 0.4f;
         private readonly TextCalRecBox _textCalRecBox;
         private readonly OcrConfig _ocrConfig;
 
@@ -117,7 +116,7 @@ namespace RapidOCRSharpOnnx.Utils
 
             foreach (var item in items)
             {
-                if (item.Score < TextScore)
+                if (item.Score < _ocrConfig.RecognizerConfig.TextScore)
                     continue;
 
                 var box = item.Box;
@@ -154,7 +153,7 @@ namespace RapidOCRSharpOnnx.Utils
                 float boxH = UtilsHelper.GetBoxHeight(box);
                 float boxW = UtilsHelper.GetBoxWidth(box);
 
-                bool vertical = boxH > 2 * boxW;
+                bool vertical = boxH >= 1.6 * boxW;
 
                 using SKFont font = GetFont(box, txt, boxH, boxW, vertical);
                 // ===== 文本 =====
@@ -194,11 +193,11 @@ namespace RapidOCRSharpOnnx.Utils
             SKFont font = new(_typeface, fontSize);
             if (vertical)
             {
-                font.Size = FitTextSizeBinary(font, boxW * 0.8f);
+                font.Size = FitTextSizeBinary(font, boxW * 0.68f);
             }
             else
             {
-                font.Size = FitTextSizeBinary(font, boxH * 0.9f);
+                font.Size = FitTextSizeBinary(font, boxH * 0.88f);
             }
 
             return font;

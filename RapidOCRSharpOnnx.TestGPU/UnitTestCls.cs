@@ -2,15 +2,19 @@
 using RapidOCRSharpOnnx.Providers;
 using RapidOCRSharpOnnx.TestCommon;
 using RapidOCRSharpOnnx.Utils;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace RapidOCRSharpOnnx.Test
+namespace RapidOCRSharpOnnx.TestGPU
 {
-    public class UnitTestCls: UnitTestBase
+    public class UnitTestCls : UnitTestBase
     {
         [Fact]
         public void TestMobile()
         {
-            using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderCPU(new OcrConfig(detectPath, recPath, LangRec.CH, OCRVersion.PPOCRV5, clsMobilePath)));
+            var deviceId = Utils.GetMainGPU();
+            using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderDirectML(new OcrConfig(detectPath, recPath, LangRec.CH, OCRVersion.PPOCRV5, clsMobilePath), deviceId));
             var res = ocr.RecognizeText(GetFullPath(png_testClspng));
             Assert.NotNull(res.ClsResult.Data);
             Assert.True(res.ClsResult.Data.Length > 0);
@@ -20,7 +24,8 @@ namespace RapidOCRSharpOnnx.Test
         [Fact]
         public void TestServer()
         {
-            using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderCPU(new OcrConfig(detectPath, recPath, LangRec.CH, OCRVersion.PPOCRV5, clsServerPath)));
+            var deviceId = Utils.GetMainGPU();
+            using RapidOCRSharp ocr = new RapidOCRSharp(new ExecutionProviderDirectML(new OcrConfig(detectPath, recPath, LangRec.CH, OCRVersion.PPOCRV5, clsServerPath), deviceId));
             var res = ocr.RecognizeText(GetFullPath(png_testClspng));
             Assert.NotNull(res.ClsResult.Data);
             Assert.True(res.ClsResult.Data.Length > 0);

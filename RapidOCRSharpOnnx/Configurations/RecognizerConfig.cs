@@ -11,7 +11,8 @@ namespace RapidOCRSharpOnnx.Configurations
         public required LangRec LangRec { get; set; }
         public int[] RecImgShape = [3, 48, 320];
         public int RecBatchNum = 6;
-       
+        public float TextScore = 0.4f;
+
 
     }
 }

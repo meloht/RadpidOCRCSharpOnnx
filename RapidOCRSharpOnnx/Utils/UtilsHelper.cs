@@ -1,6 +1,8 @@
 ﻿using OpenCvSharp;
+using RapidOCRSharpOnnx.Configurations;
 using RapidOCRSharpOnnx.Inference.PPOCR_Det;
 using RapidOCRSharpOnnx.Inference.PPOCR_Det.Models;
+using RapidOCRSharpOnnx.Models;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -39,6 +41,12 @@ namespace RapidOCRSharpOnnx.Utils
             return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "fonts", fontFileName);
         }
 
+        public static string BuildTextBlocks(RecResult[] recResults, float textScore)
+        {
+            if (recResults == null || recResults.Length == 0)
+                return string.Empty;
+            return string.Join(" ", recResults.Where(p => p.Score > textScore).Select(r => r.Label));
+        }
         public static bool IsChineseChar(char ch)
         {
             // 对应Python的Unicode范围判断：

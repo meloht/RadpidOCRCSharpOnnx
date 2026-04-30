@@ -147,7 +147,7 @@ namespace RapidOCRSharpOnnx.Inference
                 {
                     detResult.Data.DetItems[i].Word = recResults.Data[i].Label;
                 }
-                result.TextBlocks = string.Join(" ", recResults.Data.Select(r => r.Label));
+                result.TextBlocks = UtilsHelper.BuildTextBlocks(recResults.Data, _ocrConfig.RecognizerConfig.TextScore);
 
                 if (!string.IsNullOrEmpty(savePath))
                 {
@@ -182,7 +182,7 @@ namespace RapidOCRSharpOnnx.Inference
                 {
                     detResult.Data.DetItems[i].Word = recResults.Data[i].Label;
                 }
-                result.TextBlocks = string.Join(" ", recResults.Data.Select(r => r.Label));
+                result.TextBlocks = UtilsHelper.BuildTextBlocks(recResults.Data, _ocrConfig.RecognizerConfig.TextScore);
 
                 if (!string.IsNullOrEmpty(savePath))
                 {
@@ -197,16 +197,22 @@ namespace RapidOCRSharpOnnx.Inference
         {
             await foreach (OcrBatchResult item in channelRecPre.Reader.ReadAllAsync())
             {
-                await _ocrRecognizer.BatchRecAsync(item);
-                _ = InferCompleteAsync(item, processCallback, receiveAction);
+                await _ocrRecognizer.BatchRecAsync(item).ContinueWith(t => 
+                {
+                    _ = InferCompleteAsync(item, processCallback, receiveAction);
+                });
+              
             }
         }
         private async Task BatchParallelRecRead(Channel<OcrBatchResult> channelRecPre, IBatchProcessCallback processCallback = null, Action<OcrBatchResult> receiveAction = null)
         {
             await foreach (OcrBatchResult item in channelRecPre.Reader.ReadAllAsync())
             {
-                await _ocrRecognizer.BatchParallelRecAsync(item);
-                _ = InferCompleteAsync(item, processCallback, receiveAction);
+                await _ocrRecognizer.BatchParallelRecAsync(item).ContinueWith(t => 
+                {
+                    _ = InferCompleteAsync(item, processCallback, receiveAction);
+                });
+                
             }
         }
         private async Task InferCompleteAsync(OcrBatchResult result, IBatchProcessCallback processCallback, Action<OcrBatchResult> receiveAction)
