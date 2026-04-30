@@ -9,16 +9,16 @@ namespace RapidOCRSharpOnnx.ConsoleApp
 {
     internal class Program
     {
-        const int _deviceId = 0;
+        const int _deviceId = 1;
         static void Main(string[] args)
         {
             var buildNumber = Environment.OSVersion.Version.Build;
             //TestParallelBatch();
             //TestBatch();
             //_=TestBatchForeachAsync();
-            TestListSeq();
+            //TestListSeq();
              //TestListSeq2();
-           // TestImage();
+            TestImage();
 
             //Parallel.For(0, 100, i =>
             //{
