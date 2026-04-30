@@ -11,7 +11,7 @@
 ![GitHub license](https://img.shields.io/github/license/meloht/RapidOCRSharpOnnx) 
 ![Release](https://img.shields.io/github/v/release/meloht/RapidOCRSharpOnnx.svg?logo=github&label=Release) 
 [![NuGet](https://img.shields.io/nuget/v/RapidOCRSharpOnnx.svg?logo=nuget&logoColor=white)](https://www.nuget.org/packages/RapidOCRSharpOnnx/)
-[![NuGet](https://img.shields.io/nuget/dt/RapidOCRSharpOnnx.svg?logo=nuget)](https://www.nuget.org/packages/RapidOCRSharpOnnx/) 
+[![NuGet Downloads](https://img.shields.io/nuget/dt/RapidOCRSharpOnnx.svg?logo=nuget)](https://www.nuget.org/packages/RapidOCRSharpOnnx/) 
 [![GitHub last commit](https://img.shields.io/github/last-commit/meloht/RapidOCRSharpOnnx?logo=github)](https://github.com/meloht/RapidOCRSharpOnnx)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/t/meloht/RapidOCRSharpOnnx?logo=github)](https://github.com/meloht/RapidOCRSharpOnnx)
 
