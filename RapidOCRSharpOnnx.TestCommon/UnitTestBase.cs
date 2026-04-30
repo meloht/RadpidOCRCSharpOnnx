@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RapidOCRSharpOnnx.Test
+namespace RapidOCRSharpOnnx.TestCommon
 {
     public class UnitTestBase
     {
@@ -17,7 +17,7 @@ namespace RapidOCRSharpOnnx.Test
 
         protected const string Res_txt = "Let's start collaborating Select a chat or channel from the list to get started.";
         protected const string Res_en = "She walks in beauty, like the night Of  cloudless climes and starry skies; And all that's best of dark and bright Meet in her aspect and l her eyes; Thus mellowed to that tender light Which heaven to gaudy day denies.";
-        protected const string Res_testCls = "我 ";
+        protected const string Res_testCls = "我";
         protected const string Res_textVerticalWords = "已取之時不參一人 是非不得間之人要取之 有評是是非非之士師也 見 而";
 
         protected string detectPath;
@@ -36,6 +36,37 @@ namespace RapidOCRSharpOnnx.Test
         protected string GetFullPath(string img)
         {
             return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestImages", img);
+        }
+
+        protected string GetImageFolder()
+        {
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestImages");
+        }
+
+        protected string GetImageHorizFolder()
+        {
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestImagesHoriz");
+        }
+
+        protected Dictionary<string, string> GetImagesMap()
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+
+            dict.Add(png_en, Res_en);
+            dict.Add(png_testClspng, Res_testCls);
+            dict.Add(png_textVerticalWords, Res_textVerticalWords);
+            dict.Add(png_txt, Res_txt);
+            return dict;
+        }
+
+        protected Dictionary<string, string> GetImagesHorizMap()
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+
+            dict.Add(png_en, Res_en);
+           
+            dict.Add(png_txt, Res_txt);
+            return dict;
         }
 
     }

@@ -6,14 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace RapidOCRSharpOnnx.Test
+namespace RapidOCRSharpOnnx.TestGPU
 {
-    public class UnitTestDetClsRec: UnitTestBase, IDisposable
+    public class UnitTestDetClsRec : UnitTestBase, IDisposable
     {
         RapidOCRSharp _ocr;
-        public UnitTestDetClsRec():base()
+        private int _deviceId;
+        public UnitTestDetClsRec() : base()
         {
-            _ocr= new RapidOCRSharp(new ExecutionProviderCPU(new OcrConfig(detectPath, recPath, LangRec.CH, OCRVersion.PPOCRV5, clsMobilePath)));
+            _deviceId = Utils.GetMainGPU();
+            _ocr = new RapidOCRSharp(new ExecutionProviderDirectML(new OcrConfig(detectPath, recPath, LangRec.CH, OCRVersion.PPOCRV5, clsMobilePath), _deviceId));
         }
 
         public void Dispose()

@@ -28,45 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
-    <Folder Include="TestImages\" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\RapidOCRSharpOnnx.TestCommon\RapidOCRSharpOnnx.TestCommon.csproj" />
     <ProjectReference Include="..\RapidOCRSharpOnnx\RapidOCRSharpOnnx.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Models\ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Models\ch_PP-LCNet_x1_0_textline_ori_cls_server.onnx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Models\ch_PP-OCRv5_det_mobile.onnx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Models\ch_PP-OCRv5_rec_mobile.onnx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestImages\en.jpg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestImages\en_txt.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestImages\headerText.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestImages\test_cls.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestImages\text_vertical_words.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="TestImages\txt.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>
