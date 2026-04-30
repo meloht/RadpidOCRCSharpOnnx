@@ -24,6 +24,7 @@ Referring to the [RapidOCR](https://github.com/RapidAI/RapidOCR) project, it is 
  - **Batch processing images** Preprocess and Inference are executed asynchronously  with Producer/Consumer pattern
  - **High Performance Inference** Memory reuse, GPU Inference with I/O Binding
  - **Image Processing** [OpenCvSharp4](https://github.com/shimat/opencvsharp)
+ - **Draw Result Image** [SkiaSharp](https://github.com/mono/SkiaSharp)
  - **Inference Engine** [ONNX Runtime](https://github.com/microsoft/onnxruntime) is a cross-platform inference and training machine-learning accelerator.
  - **PP-OCR Versions** Includes support for: [PP-OCRv5](https://www.paddleocr.ai/v3.0.0/version3.x/pipeline_usage/OCR.html), [PP-OCRv4](https://www.paddleocr.ai/v3.0.0/version3.x/pipeline_usage/PP-ChatOCRv4.html)
 
