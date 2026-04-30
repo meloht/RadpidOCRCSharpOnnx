@@ -348,22 +348,7 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         {
             // 最小外接矩形
             RotatedRect rect = Cv2.MinAreaRect(contour);
-            Point2f[] points = Cv2.BoxPoints(rect);
-            Array.Sort(points, (a, b) => a.X.CompareTo(b.X));
-
-
-            // 排序点（保证顺时针）
-            var idx1 = points[1].Y > points[0].Y ? points[0] : points[1];
-            var idx4 = points[1].Y > points[0].Y ? points[1] : points[0];
-            var idx2 = points[3].Y > points[2].Y ? points[2] : points[3];
-            var idx3 = points[3].Y > points[2].Y ? points[3] : points[2];
-
-            points[0] = idx1;
-            points[1] = idx2;
-            points[2] = idx3;
-            points[3] = idx4;
-
-            return (points, Math.Min(rect.Size.Width, rect.Size.Height));
+            return OrderPoint(rect);
 
         }
 
@@ -374,6 +359,12 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
         {
             // 最小外接矩形
             RotatedRect rect = Cv2.MinAreaRect(contour);
+
+            return OrderPoint(rect);
+        }
+
+        private (Point2f[], float) OrderPoint(RotatedRect rect) 
+        {
             Point2f[] points = Cv2.BoxPoints(rect);
             Array.Sort(points, (a, b) => a.X.CompareTo(b.X));
 
@@ -390,7 +381,6 @@ namespace RapidOCRSharpOnnx.Inference.PPOCR_Det
             points[3] = idx4;
 
             return (points, Math.Min(rect.Size.Width, rect.Size.Height));
-
         }
     }
 }
