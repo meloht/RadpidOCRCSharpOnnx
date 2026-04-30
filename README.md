@@ -34,9 +34,9 @@ Referring to the [RapidOCR](https://github.com/RapidAI/RapidOCR) project, it is 
  
 | OCR Demo  |
 |---------------|
-| <img src="./ExampleImages/res_book.png" height="411" > |
-| <img src="./ExampleImages/res_csharp.png" height="750"> |
-| <img src="./ExampleImages/res_yongledadian.png" height="787"> |
+| <img src="https://github.com/meloht/RapidOCRSharpOnnx/blob/master/ExampleImages/res_book.png?raw=true" height="411" > |
+| <img src="https://github.com/meloht/RapidOCRSharpOnnx/blob/master/ExampleImages/res_csharp.png?raw=true" height="750"> |
+| <img src="https://github.com/meloht/RapidOCRSharpOnnx/blob/master/ExampleImages/res_yongledadian.png?raw=true" height="787"> |
 
 </div>
 
