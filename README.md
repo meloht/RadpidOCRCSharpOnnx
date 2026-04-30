@@ -5,7 +5,7 @@
 ![PP-OCRv4](https://img.shields.io/badge/PP--OCR-v4-blue)
 ![PP-OCRv5](https://img.shields.io/badge/PP--OCR-v5-blue)
 ![C#](https://img.shields.io/badge/language-C%23-blue.svg) 
-![.NET Version](https://img.shields.io/badge/dynamic/xml?url=https://raw.githubusercontent.com/meloht/YoloSharpOnnx/refs/heads/master/YoloSharpOnnx/YoloSharpOnnx.csproj&query=//TargetFrameworks&label=.NET)
+![.NET Version](https://img.shields.io/badge/dynamic/xml?url=https://raw.githubusercontent.com/meloht/RapidOCRSharpOnnx/refs/heads/master/RapidOCRSharpOnnx/RapidOCRSharpOnnx.csproj&query=//TargetFrameworks&label=.NET)
 ![ONNX Runtime](https://img.shields.io/badge/ONNX-Runtime-blue.svg?logo=onnx&logoColor=white)
 ![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-green.svg?logo=opencv&logoColor=white)
 ![GitHub license](https://img.shields.io/github/license/meloht/RapidOCRSharpOnnx) 
