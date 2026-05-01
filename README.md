@@ -195,9 +195,10 @@ await foreach (var item in resPaths)
 
 ## RapidOCR test result
 
-**CPU inference time:**  19.03710399987176 s
+**CPU inference time:** 17.963430000003427 s
 
-<img width="962" height="1134" alt="image" src="https://github.com/user-attachments/assets/c4115dfb-3d4a-4532-a2c2-339c3c86686b" />
+<img width="997" height="1093" alt="image" src="https://github.com/user-attachments/assets/79ab7dd5-0311-42ea-aa03-ed5695ff5fae" />
+
 
 ## Performance Test Result
 
@@ -205,7 +206,7 @@ await foreach (var item in resPaths)
 | ------------- | ------------- | ------------- |------------- |------------- |
 | [PaddleSharp](https://github.com/sdcb/PaddleSharp)| 3.0.1 |Paddle Inference C API .NET binding|  Sdcb.PaddleInference.runtime.win64.mkl version 3.1.0.54 CPU|48.1769s |
 | [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)| 3.5.0 |python| paddlepaddle version 3.2.0 CPU|62.6685s |
-| [RapidOCR](https://github.com/RapidAI/RapidOCR)| 3.8.1 |python| openvino version 2026.1.0  21367 CPU|19.0371s|
+| [RapidOCR](https://github.com/RapidAI/RapidOCR)| 3.8.1 |python| openvino version 2026.1.0  21367 CPU|17.9634s|
 | [RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)| 1.0.0 |C#|Intel.ML.OnnxRuntime.OpenVino CPU  version 1.24.1|9.2606s 
 
 
