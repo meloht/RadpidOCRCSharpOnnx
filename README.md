@@ -153,10 +153,10 @@ await foreach (var item in resPaths)
 
 |OCR inference library|Version|language|Inference Engine|
 | ------------- | ------------- | ------------- |------------- |
-| [PaddleSharp](https://github.com/sdcb/PaddleSharp)| 3.0.1 |Paddle Inference C API .NET binding|  paddlepaddle
+| [PaddleSharp](https://github.com/sdcb/PaddleSharp)| 3.0.1 |Paddle Inference C API .NET binding|  Sdcb.PaddleInference
 | [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)| 3.5.0 |python| paddlepaddle |
-| [RapidOCR](https://github.com/RapidAI/RapidOCR)| 3.8.1 |python| onnx runtime |
-| [RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)| 1.0.0 |C#|onnx runtime|
+| [RapidOCR](https://github.com/RapidAI/RapidOCR)| 3.8.1 |python| openvino |
+| [RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)| 1.0.0 |C#|Intel.ML.OnnxRuntime.OpenVino|
 
 ## Performance Test PC 
 
