@@ -15,7 +15,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/meloht/RapidOCRSharpOnnx?logo=github)](https://github.com/meloht/RapidOCRSharpOnnx)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/t/meloht/RapidOCRSharpOnnx?logo=github)](https://github.com/meloht/RapidOCRSharpOnnx)
 
-🚀a high performance, cross-platform C# PaddleOCR inference library base on OpenCV and ONNX Runtime.
+🚀a high performance, cross-platform PaddleOCR C# inference library base on OpenCV and ONNX Runtime.
 Referring to the [RapidOCR](https://github.com/RapidAI/RapidOCR) project, it is a python version of the C# implementation with a redesigned and optimized architecture.
 
 # Features
