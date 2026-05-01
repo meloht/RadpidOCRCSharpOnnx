@@ -149,6 +149,77 @@ await foreach (var item in resPaths)
 
 ```
 
+# Performance Test
+
+|OCR inference library|Version|language|Inference Engine|
+| ------------- | ------------- | ------------- |------------- |
+| [PaddleSharp](https://github.com/sdcb/PaddleSharp)| 3.0.1 |Paddle Inference C API .NET binding|  paddlepaddle
+| [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)| 3.5.0 |python| paddlepaddle |
+| [RapidOCR](https://github.com/RapidAI/RapidOCR)| 3.8.1 |python| onnx runtime |
+| [RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)| 1.0.0 |C#|onnx runtime|
+
+## Performance Test PC 
+
+|Hardware|Summary|
+| ------------- | ------------- | 
+|Windows |Windows 11 Pro OS Version 25H2|
+|CPU| Intel Core Ultra 9 285k 3.7GHz|
+|RAM| DDR5 128GB speed 4400MT/s|
+|GPU| NVIDIA GeForce RTX 5090 32GB|
+|Storage| SSD 2TB|
+
+## Performance Test Data
+
+**Images:**  60 images (image size: 1180x92)
+
+**PP-OCR Model:**  ch_PP-OCRv5_det_mobile, ch_PP-OCRv5_rec_mobile, ch_PP-LCNet_x0_25_textline_ori_cls_mobile
+
+
+## PaddleSharp test result
+
+**CPU inference time:** 48.1769278s 
+
+<img width="1331" height="847" alt="image" src="https://github.com/user-attachments/assets/87515077-e9c2-48b2-9e43-6b145e1c7a7a" />
+
+
+## RapidOCRSharpOnnx test result
+
+**CPU inference time:** 9.2606522s 
+
+<img width="1338" height="860" alt="image" src="https://github.com/user-attachments/assets/b0332ed9-afe4-48d9-8c47-4156925feebb" />
+
+## PaddleOCR test result
+
+**CPU inference time:** 62.668516899924725s 
+
+<img width="1009" height="911" alt="image" src="https://github.com/user-attachments/assets/b367749f-3c37-4326-bb30-ea4fcb52315d" />
+
+## RapidOCR test result
+
+**CPU inference time:**  19.03710399987176 s
+
+<img width="962" height="1134" alt="image" src="https://github.com/user-attachments/assets/c4115dfb-3d4a-4532-a2c2-339c3c86686b" />
+
+## Performance Test Result
+
+|OCR inference library|Version|language|Inference Engine|Elapsed Time|
+| ------------- | ------------- | ------------- |------------- |------------- |
+| [PaddleSharp](https://github.com/sdcb/PaddleSharp)| 3.0.1 |Paddle Inference C API .NET binding|  Sdcb.PaddleInference.runtime.win64.mkl version 3.1.0.54|48.1769278s |
+| [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)| 3.5.0 |python| paddlepaddle version 3.2.0|62.668516899924725s |
+| [RapidOCR](https://github.com/RapidAI/RapidOCR)| 3.8.1 |python| openvino cpu version 2026.1.0  21367|19.03710399987176s|
+| [RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)| 1.0.0 |C#|Intel.ML.OnnxRuntime.OpenVino CPU  version 1.24.1|9.2606522s 
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
