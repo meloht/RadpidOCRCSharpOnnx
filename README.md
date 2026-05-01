@@ -165,7 +165,6 @@ await foreach (var item in resPaths)
 |Windows |Windows 11 Pro OS Version 25H2|
 |CPU| Intel Core Ultra 9 285k 3.7GHz|
 |RAM| DDR5 128GB speed 4400MT/s|
-|GPU| NVIDIA GeForce RTX 5090 32GB|
 |Storage| SSD 2TB|
 
 ## Performance Test Data
