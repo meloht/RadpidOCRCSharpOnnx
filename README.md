@@ -208,7 +208,7 @@ await foreach (var item in resPaths)
 | [PaddleSharp](https://github.com/sdcb/PaddleSharp)| 3.0.1 |Paddle Inference C API .NET binding|  Sdcb.PaddleInference.runtime.win64.mkl version 3.1.0.54 CPU|48.1769s |
 | [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)| 3.5.0 |python| paddlepaddle version 3.2.0 CPU|62.6685s |
 | [RapidOCR](https://github.com/RapidAI/RapidOCR)| 3.8.1 |python| openvino version 2026.1.0  21367 CPU|17.9634s|
-| [RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)| 1.0.0 |C#|Intel.ML.OnnxRuntime.OpenVino CPU  version 1.24.1|9.2447 
+| [RapidOCRSharpOnnx](https://github.com/meloht/RapidOCRSharpOnnx)| 1.0.0 |C#|Intel.ML.OnnxRuntime.OpenVino CPU  version 1.24.1|9.2447s 
 
 
 
